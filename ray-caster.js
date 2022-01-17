@@ -89,6 +89,9 @@ export class RayCaster {
     this.minimapCanvas.addEventListener('pointerup', this.endEditMap.bind(this));
   }
 
+  /**
+   * Project the current state to the main canvas & minimap
+   */
   cast() {
     for (let i = 0; i < this.numSlivers; i++) {
       let dist = REALLY_FAR;
@@ -122,6 +125,11 @@ export class RayCaster {
       this.mainContext.fillRect(i * SLIVER_SIZE, this.halfHeight - height, SLIVER_SIZE, height * 2);
     }
 
+    /**
+     * q[1-4]Dist functions for each respective quadrant return the distance along a single ray to the nearest wall
+     * @param {number} alpha angle in radians, must be between 0 and PI / 2
+     * @returns {number}
+     */
     function q1Dist(alpha) {
       const tanAlpha = Math.tan(alpha);
       const yV = (Math.floor(this.camera.y / BLOCK_SIZE) * BLOCK_SIZE) - 1;
@@ -131,12 +139,12 @@ export class RayCaster {
           dX: BLOCK_SIZE / tanAlpha,
           dY: -BLOCK_SIZE,
           y: yV,
-          x: ((this.camera.y - yV) / tanAlpha) + this.camera.x
+          x: this.camera.x + (this.camera.y - yV) / tanAlpha
         },
         horizontal: {
           dX: BLOCK_SIZE,
           dY: -BLOCK_SIZE * tanAlpha,
-          y: (this.camera.x - xH) * tanAlpha + this.camera.y,
+          y: this.camera.y + (this.camera.x - xH) * tanAlpha,
           x: xH
         }
       };
@@ -180,7 +188,7 @@ export class RayCaster {
         horizontal: {
           dX: -BLOCK_SIZE,
           dY: BLOCK_SIZE * tanAlpha,
-          y: tanAlpha * (this.camera.x - xH) + this.camera.y,
+          y: this.camera.y + (this.camera.x - xH) * tanAlpha,
           x: xH
         }
       };
@@ -202,7 +210,7 @@ export class RayCaster {
         horizontal: {
           dX: BLOCK_SIZE,
           dY: BLOCK_SIZE / tanAlpha,
-          y: (xH - this.camera.x) / tanAlpha + this.camera.y,
+          y: this.camera.y + (xH - this.camera.x) / tanAlpha,
           x: xH
         }
       };
@@ -211,6 +219,11 @@ export class RayCaster {
     }
   }
 
+  /**
+   * Check each grid intersection for a wall
+   * @param data parameters given by q[1-4]Dist functions
+   * @returns {number} distance to nearest wall
+   */
   findWall(data) {
     let dist = REALLY_FAR;
     for (const dir of ['vertical', 'horizontal']) {
@@ -240,7 +253,7 @@ export class RayCaster {
     }
     return dist;
   }
-  // need to convert this to use precomputed trig functions abs(diffX) / cos(theta) & abs(diffY) / sin(theta)
+
   getDistance(p1, p2) {
     const dx = Math.abs(p1.x - p2.x);
     const dy = Math.abs(p1.y - p2.y);
@@ -281,26 +294,27 @@ export class RayCaster {
     this.minimapContext.fill();
   }
 
-  miniMapRay(theta, q) {
+  miniMapRay(alpha, q) {
     const xPos = this.camera.x / BLOCK_SIZE * MINIMAP_TILE_SIZE;
     const yPos = this.camera.y / BLOCK_SIZE * MINIMAP_TILE_SIZE;
+    const rayLength = MINIMAP_TILE_SIZE * 10;
     let xEnd, yEnd;
     switch(q) {
       case 1:
-        xEnd = xPos + Math.cos(theta) * MINIMAP_TILE_SIZE * 10;
-        yEnd = yPos - Math.sin(theta) * MINIMAP_TILE_SIZE * 10;
+        xEnd = xPos + Math.cos(alpha) * rayLength;
+        yEnd = yPos - Math.sin(alpha) * rayLength;
         break;
       case 2:
-        xEnd = xPos - Math.sin(theta) * MINIMAP_TILE_SIZE * 10;
-        yEnd = yPos - Math.cos(theta) * MINIMAP_TILE_SIZE * 10;
+        xEnd = xPos - Math.sin(alpha) * rayLength;
+        yEnd = yPos - Math.cos(alpha) * rayLength;
         break;
       case 3:
-        xEnd = xPos - Math.cos(theta) * MINIMAP_TILE_SIZE * 10;
-        yEnd = yPos + Math.sin(theta) * MINIMAP_TILE_SIZE * 10;
+        xEnd = xPos - Math.cos(alpha) * rayLength;
+        yEnd = yPos + Math.sin(alpha) * rayLength;
         break;
       case 4:
-        xEnd = xPos + Math.sin(theta) * MINIMAP_TILE_SIZE * 10;
-        yEnd = yPos + Math.cos(theta) * MINIMAP_TILE_SIZE * 10;
+        xEnd = xPos + Math.sin(alpha) * rayLength;
+        yEnd = yPos + Math.cos(alpha) * rayLength;
         break;
     }
     this.minimapContext.strokeStyle = 'rgba(0, 255, 0, 0.03)';
