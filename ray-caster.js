@@ -123,7 +123,7 @@ export class RayCaster {
       const g = Math.floor(Math.random() * 6);
       const b = Math.floor(Math.random() * 6);
       this.mainContext.fillStyle = `rgb(${shade + r}, ${shade + g}, ${shade + 10 + b})`;
-      const height = this.screenHeight / dist * this.distToPlane / 3; // dividing by 3 is not part of the formula, but cubes don't look like cubes otherwise (I probably messed up somewhere else)
+      const height = BLOCK_SIZE / dist * this.distToPlane;
       const top = this.halfHeight - height / 2 + this.altitude / dist * this.distToPlane;
       this.mainContext.fillRect(i * SLIVER_SIZE, top, SLIVER_SIZE, height);
     }
