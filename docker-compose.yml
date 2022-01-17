@@ -1,0 +1,9 @@
+version: '2.1'
+services:
+  ray-caster:
+    build:
+      context: ./
+    volumes:
+      - ./:/usr/share/nginx/html
+    ports:
+      - "1234:80"

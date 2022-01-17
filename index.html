@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raycasting Demo</title>
+  <style>
+    canvas#render {
+      border: 1px solid black;
+      position: absolute;
+      top: calc(50% - 200px);
+      left: calc(50% - 320px);
+      height: 400px;
+    }
+    canvas#minimap {
+      border: 1px solid black;
+    }
+  </style>
+  <script type="module">
+    import { RayCaster } from './ray-caster.js';
+    window.init = init;
+    const map =
+    '##############################' +
+    '#                            #' +
+    '#                            #' +
+    '#                            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#          ###  ###          #' +
+    '#          #      #          #' +
+    '#   ########      ########   #' +
+    '#             ##             #' +
+    '#             ##             #' +
+    '#   ########      ########   #' +
+    '#          #      #          #' +
+    '#          ###  ###          #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#            #  #            #' +
+    '#    .                       #' +
+    '#                            #' +
+    '#                            #' +
+    '##############################';
+    function init() {
+      const canvas = document.getElementById('render');
+      const minimap = document.getElementById('minimap');
+      const renderer = new RayCaster(canvas, minimap, map, 30, 30);
+      renderer.start();
+    }
+  </script>
+</head>
+<body onload="init()">
+  <canvas id="render" height="200" width="320"></canvas>
+  <canvas id="minimap"></canvas>
+</body>
+</html>
