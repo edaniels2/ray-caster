@@ -37,6 +37,8 @@ export class RayCaster {
   camera;
   /** @type {boolean[][]} */
   mapData;
+  altitude = 0;
+  jumpCounter = 0;
   movingFwd = false;
   movingBack = false;
   turningLeft = false;
@@ -121,8 +123,9 @@ export class RayCaster {
       const g = Math.floor(Math.random() * 6);
       const b = Math.floor(Math.random() * 6);
       this.mainContext.fillStyle = `rgb(${shade + r}, ${shade + g}, ${shade + 10 + b})`;
-      const height = this.screenHeight / dist * this.distToPlane / 6; // dividing by 6 is not part of the formula, but the scale is weird otherwise (not sure why)
-      this.mainContext.fillRect(i * SLIVER_SIZE, this.halfHeight - height, SLIVER_SIZE, height * 2);
+      const height = this.screenHeight / dist * this.distToPlane / 3; // dividing by 3 is not part of the formula, but cubes don't look like cubes otherwise (I probably messed up somewhere else)
+      const top = this.halfHeight - height / 2 + this.altitude / dist * this.distToPlane;
+      this.mainContext.fillRect(i * SLIVER_SIZE, top, SLIVER_SIZE, height);
     }
 
     /**
@@ -370,7 +373,14 @@ export class RayCaster {
       this.camera.t -= this.deltaT * TURN_SPEED;
       this.camera.t = this.normalizeAngle(this.camera.t);
     }
-    if (this.camera.x !== this.prevCamX || this.camera.y !== this.prevCamY || this.camera.t !== this.prevCamT || this.mapChanged) {
+    if (this.jumpCounter) {
+      debugger
+      this.altitude = -Math.pow(this.jumpCounter / 3 - 4, 2) + 16;
+      this.jumpCounter--;
+    } else {
+      this.altitude = 0;
+    }
+    if (this.camera.x !== this.prevCamX || this.camera.y !== this.prevCamY || this.camera.t !== this.prevCamT || this.mapChanged || this.altitude) {
       this.drawBackground();
       this.drawMiniMap(this.mapData, this.camera);
       this.cast();
@@ -413,6 +423,10 @@ export class RayCaster {
       case 's':
         this.movingBack = keyDown;
         break;
+      case ' ':
+        if (!this.jumpCounter) {
+          this.jumpCounter = 24;
+        }
     }
   }
 
