@@ -145,7 +145,7 @@ export class RayCaster {
           const cosBeta = Math.cos(beta);
           const cosTheta = Math.cos(theta);
           const sinTheta = Math.sin(theta);
-          const distCoef = this.distToPlane * BLOCK_SIZE / 2;
+          const distCoef = this.distToPlane * (BLOCK_SIZE / 2 + this.altitude);
           const bottomOfWall = Math.floor(top + height);
           let imageBufferY = 0;
           for (let p = 0; p < this.screenHeight; p++) {
@@ -172,7 +172,7 @@ export class RayCaster {
               // floor texture
               let pixel = p - this.halfHeight;
               pixel = pixel === 0 ? 1 : pixel;
-              const straightDist = distCoef / pixel + this.altitude; // altitude probably needs to be corrected for distance
+              const straightDist = distCoef / pixel;
               const distToP = straightDist / cosBeta;
               const x = this.camera.x + cosTheta * distToP;
               const y = this.camera.y - sinTheta * distToP;
