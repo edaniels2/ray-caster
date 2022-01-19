@@ -75,6 +75,10 @@ export class RayCaster {
     this.numSlivers = Math.ceil(this.screenWidth / SLIVER_SIZE);
     /** @type {number} */
     this.deltaT = FOV / this.numSlivers;
+    /** @type {ImageData} */
+    this.imageBuffer = new ImageData(this.screenWidth, this.screenHeight);
+    /** @type {boolean} */
+    this.textureDataReady = false;
     /** @type {HTMLImageElement} */
     this.wallTexture = new Image(BLOCK_SIZE, BLOCK_SIZE);
     this.wallTexture.src = './bricksx64.png'; // texture image from https://opengameart.org/content/bricks-tiled-texture-64x64
@@ -86,7 +90,13 @@ export class RayCaster {
     this.minimapCanvas.width = this.mapSizeX * MINIMAP_TILE_SIZE;
     this.minimapCanvas.height = this.mapSizeY * MINIMAP_TILE_SIZE;
     this.floorTexture.decode().then(() => {
-      this.floorTextureBuffer = this.createFloorBuffer();
+      this.floorTextureData = this.extractFloorData();
+      this.textureDataReady = this.floorTextureData && this.wallTextureData;
+      this.mapChanged = true;
+    });
+    this.wallTexture.decode().then(() => {
+      this.wallTextureData = this.extractWallData();
+      this.textureDataReady = this.floorTextureData && this.wallTextureData;
       this.mapChanged = true;
     });
   }
@@ -107,6 +117,8 @@ export class RayCaster {
    * Project the current state to the main canvas & minimap
    */
   cast() {
+    let imageBufferX = 0;
+
     for (let i = 0; i < this.numSlivers; i++) {
       const beta = FOV / 2 - i * this.deltaT;
       const theta = this.normalizeAngle(this.camera.t + beta);
@@ -124,44 +136,56 @@ export class RayCaster {
       // fish eye correction
       dist *= Math.cos(this.normalizeAngle(this.camera.t - theta));
 
-      // draw wall sliver
       const height = BLOCK_SIZE / dist * this.distToPlane;
       const top = this.halfHeight - height / 2 + this.altitude / dist * this.distToPlane;
-      if (USE_TEXTURES) { // texture on walls facing N/S are a little messed up? it's not terrible but I have no idea why it's happening
-        this.mainContext.drawImage(this.wallTexture, this.wallSlice, 0, SLIVER_SIZE, BLOCK_SIZE, i * SLIVER_SIZE, top, SLIVER_SIZE, height);
-
-        // add a little shadow to distant walls
-        const shade = 1 - Math.floor(100 * height / this.screenHeight) / 10;
-        this.mainContext.fillStyle = `rgba(0, 0, 0, ${shade})`;
-        this.mainContext.fillRect(i * SLIVER_SIZE, top, SLIVER_SIZE, height);
-
-        // draw floor sliver
-        if (this.floorTextureBuffer) {
+      const shade = 1 - 1 / Math.abs(REALLY_FAR / 16 / (1 - dist)); // adds some light shadow to distant walls
+      if (USE_TEXTURES) {
+        // map the sliver to the image buffer pixel by pixel
+        if (this.textureDataReady) {
           const cosBeta = Math.cos(beta);
           const cosTheta = Math.cos(theta);
           const sinTheta = Math.sin(theta);
           const distCoef = this.distToPlane * BLOCK_SIZE / 2;
           const bottomOfWall = Math.floor(top + height);
-          const floorHeight = bottomOfWall < 0 ? this.screenHeight : (bottomOfWall >= this.screenHeight ? 1 : (this.screenHeight - bottomOfWall));
-          const floorSlice = new ImageData(SLIVER_SIZE, floorHeight);
-          let sliceIndex = 0;
-          for (let p = bottomOfWall; p < this.screenHeight; p++) {
-            let pixel = p - this.halfHeight;
-            pixel = pixel === 0 ? 1 : pixel;
-            const straightDist = distCoef / pixel + this.altitude; // altitude probably needs to be corrected for distance
-            const distToP = straightDist / cosBeta;
-            const x = this.camera.x + cosTheta * distToP;
-            const y = this.camera.y + sinTheta * distToP;
-            const tileX = Math.floor(x % BLOCK_SIZE);
-            const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
-            const bufferStart = (tileY * this.floorTextureBuffer.width + tileX) * 4;
-            const outputStart = sliceIndex++ * 4;
-            for (let offset = 0; offset <= 4; offset++) {
-              floorSlice.data[outputStart + offset] = this.floorTextureBuffer.data[bufferStart + offset];
+          let imageBufferY = 0;
+          for (let p = 0; p < this.screenHeight; p++) {
+            const bufferStart = (imageBufferY * this.screenWidth + imageBufferX) * 4;
+            if (p < top) {
+              // rgba values for css 'skyblue' - probably replace with a texture
+              this.imageBuffer.data[bufferStart] = 135;
+              this.imageBuffer.data[bufferStart + 1] = 206;
+              this.imageBuffer.data[bufferStart + 2] = 235;
+              this.imageBuffer.data[bufferStart + 3] = 255;
+            } else if (p < bottomOfWall) {
+              // wall texture
+              const tileX = this.wallSlice;
+              const tileY = Math.floor((p - top) / height * BLOCK_SIZE);
+              const dataStart = (tileY * BLOCK_SIZE + tileX) * 4;
+              for (let offset = 0; offset < 4; offset++) {
+                if (offset === 3) {
+                  this.imageBuffer.data[bufferStart + offset] = this.wallTextureData.data[dataStart + offset];
+                } else {
+                  this.imageBuffer.data[bufferStart + offset] = shade * this.wallTextureData.data[dataStart + offset];
+                }
+              }
+            } else {
+              // floor texture
+              let pixel = p - this.halfHeight;
+              pixel = pixel === 0 ? 1 : pixel;
+              const straightDist = distCoef / pixel + this.altitude; // altitude probably needs to be corrected for distance
+              const distToP = straightDist / cosBeta;
+              const x = this.camera.x + cosTheta * distToP;
+              const y = this.camera.y + sinTheta * distToP;
+              const tileX = Math.floor(x % BLOCK_SIZE);
+              const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
+              const dataStart = (tileY * this.floorTextureData.width + tileX) * 4;
+              for (let offset = 0; offset < 4; offset++) {
+                this.imageBuffer.data[bufferStart + offset] = this.floorTextureData.data[dataStart + offset];
+              }
             }
+            imageBufferY++;
           }
-          // this is pretty costly, probably should create ImageData for the entire frame and just put it once
-          this.mainContext.putImageData(floorSlice, i * SLIVER_SIZE, bottomOfWall);
+          imageBufferX++;
         }
       } else {
         // create some slight variation for texture
@@ -179,6 +203,7 @@ export class RayCaster {
         this.mainContext.fillRect(i * SLIVER_SIZE, top, SLIVER_SIZE, height);
       }
     }
+    this.mainContext.putImageData(this.imageBuffer, 0, 0);
 
     /**
      * q[1-4]Dist functions for each respective quadrant return the distance along a single ray to the nearest wall
@@ -280,7 +305,7 @@ export class RayCaster {
    * @returns {number} distance to nearest wall
    */
   findWall(data) {
-    let dist = REALLY_FAR;
+    let vDist = REALLY_FAR, hDist = REALLY_FAR, vSlice = 0, hSlice = 0;
     for (const dir of ['vertical', 'horizontal']) {
       let hit = false, outOfBounds = false;
       let gridY = Math.floor(data[dir].y / BLOCK_SIZE);
@@ -289,7 +314,11 @@ export class RayCaster {
         outOfBounds = true;
       } else if (this.mapData[gridY][gridX]) {
         hit = true;
-        this.wallSlice = Math.floor(dir === 'vertical' ? data[dir].x : data[dir].y) % BLOCK_SIZE;
+        if (dir === 'vertical') {
+          vSlice = Math.floor(data[dir].x) % BLOCK_SIZE;
+        } else {
+          hSlice = Math.floor(data[dir].y) % BLOCK_SIZE;
+        }
       }
   
       while (!hit && !outOfBounds) {
@@ -301,14 +330,26 @@ export class RayCaster {
           outOfBounds = true;
         } else if (this.mapData[gridY][gridX]) {
           hit = true;
-          this.wallSlice = Math.floor(dir === 'vertical' ? data[dir].x : data[dir].y) % BLOCK_SIZE;
+          if (dir === 'vertical') {
+            vSlice = Math.floor(data[dir].x) % BLOCK_SIZE;
+          } else {
+            hSlice = Math.floor(data[dir].y) % BLOCK_SIZE;
+          }
         }
       }
-      dist = Math.min(dist,
-        outOfBounds ? REALLY_FAR : this.getDistance({x: data[dir].x, y: data[dir].y}, this.camera)
-      );
+      if (dir === 'vertical') {
+        vDist = this.getDistance({x: data[dir].x, y: data[dir].y}, this.camera);
+      } else {
+        hDist = this.getDistance({x: data[dir].x, y: data[dir].y}, this.camera);
+      }
     }
-    return dist;
+    if (vDist < hDist) {
+      this.wallSlice = vSlice;
+      return vDist;
+    } else {
+      this.wallSlice = hSlice;
+      return hDist;
+    }
   }
 
   getDistance(p1, p2) {
@@ -438,7 +479,6 @@ export class RayCaster {
       this.altitude = 0;
     }
     if (this.camera.x !== this.prevCamX || this.camera.y !== this.prevCamY || this.camera.t !== this.prevCamT || this.mapChanged || this.altitude) {
-      this.drawBackground();
       this.drawMiniMap(this.mapData, this.camera);
       this.cast();
       this.mapChanged = false;
@@ -446,13 +486,6 @@ export class RayCaster {
     this.prevCamX = this.camera.x;
     this.prevCamY = this.camera.y;
     this.prevCamT = this.camera.t;
-  }
-
-  drawBackground() {
-    this.mainContext.fillStyle = '#b0c0b0';
-    this.mainContext.fillRect(0, this.halfHeight, this.screenWidth, this.halfHeight);
-    this.mainContext.fillStyle = 'skyblue';
-    this.mainContext.fillRect(0, 0, this.screenWidth, this.halfHeight);
   }
 
   normalizeAngle(theta) {
@@ -522,13 +555,25 @@ export class RayCaster {
     return { x, y };
   }
 
-  createFloorBuffer() {
+  extractFloorData() {
     const tempCanvas = document.createElement('canvas');
     document.body.appendChild(tempCanvas);
     const ctx = tempCanvas.getContext('2d');
     tempCanvas.width = BLOCK_SIZE;
     tempCanvas.height = BLOCK_SIZE;
     ctx.drawImage(this.floorTexture, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
+    const imageData = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE);
+    tempCanvas.remove();
+    return imageData;
+  }
+
+  extractWallData() {
+    const tempCanvas = document.createElement('canvas');
+    document.body.appendChild(tempCanvas);
+    const ctx = tempCanvas.getContext('2d');
+    tempCanvas.width = BLOCK_SIZE;
+    tempCanvas.height = BLOCK_SIZE;
+    ctx.drawImage(this.wallTexture, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
     const imageData = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE);
     tempCanvas.remove();
     return imageData;
