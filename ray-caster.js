@@ -175,7 +175,7 @@ export class RayCaster {
               const straightDist = distCoef / pixel + this.altitude; // altitude probably needs to be corrected for distance
               const distToP = straightDist / cosBeta;
               const x = this.camera.x + cosTheta * distToP;
-              const y = this.camera.y + sinTheta * distToP;
+              const y = this.camera.y - sinTheta * distToP;
               const tileX = Math.floor(x % BLOCK_SIZE);
               const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
               const dataStart = (tileY * this.floorTextureData.width + tileX) * 4;
