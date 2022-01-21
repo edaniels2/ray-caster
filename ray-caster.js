@@ -167,47 +167,53 @@ export class RayCaster {
       // fish eye correction
       dist *= Math.cos(this.normalizeAngle(this.camera.t - theta));
       wallDistances.push(dist);
-
       const height = BLOCK_SIZE / dist * this.distToPlane;
-      const top = this.halfHeight - height / 2 + this.altitude / dist * this.distToPlane;
-      const shade = 1 - 1 / Math.abs(REALLY_FAR / 16 / (1 - dist)); // adds some light shadow to distant walls
-      if (USE_TEXTURES) {
+
+      if (USE_TEXTURES && this.textureDataReady) {
         // map the sliver to the image buffer pixel by pixel
-        if (this.textureDataReady) {
-          const cosBeta = Math.cos(beta);
-          const cosTheta = Math.cos(theta);
-          const sinTheta = Math.sin(theta);
-          const distCoef = this.distToPlane * (BLOCK_SIZE / 2 + this.altitude);
-          const bottomOfWall = Math.floor(top + height);
-          for (let renderY = 0; renderY < this.screenHeight; renderY++) {
-            const bufferStart = (renderY * this.screenWidth + renderX) * 4;
-            if (renderY < top) {
-              const distCoefCeil = this.distToPlane * (BLOCK_SIZE / 2 - this.altitude);
-              let pixel = this.halfHeight - renderY;
-              pixel = pixel === 0 ? 1 : pixel;
-              const straightDist = distCoefCeil / pixel;
-              const distToP = straightDist / cosBeta;
-              const x = this.camera.x + cosTheta * distToP;
-              const y = this.camera.y - sinTheta * distToP;
-              if (true) { // update the mapData to include ceilings (only on specified tiles)
-                // rgba values for css 'skyblue'
-                this.imageBuffer.data[bufferStart] = 135 + renderY * 0.5; // adds a little gradient to the sky
-                this.imageBuffer.data[bufferStart + 1] = 206;
-                this.imageBuffer.data[bufferStart + 2] = 235;
-                this.imageBuffer.data[bufferStart + 3] = 255;
-              } else {
-                const tileX = Math.floor(x % BLOCK_SIZE);
-                const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
-                const dataStart = (tileY * this.floorTextureData.width + tileX) * 4; // change to a different texture
-                for (let offset = 0; offset < 4; offset++) {
-                  this.imageBuffer.data[bufferStart + offset] = this.floorTextureData.data[dataStart + offset];
-                }
+        const cosBeta = Math.cos(beta);
+        const cosTheta = Math.cos(theta);
+        const sinTheta = Math.sin(theta);
+        const topOfWall = this.halfHeight - height / 2 + this.altitude / dist * this.distToPlane;
+        const bottomOfWall = Math.floor(topOfWall + height);
+        const shade = 1 - 1 / Math.abs(REALLY_FAR / 16 / (1 - dist)); // adds some light shadow to distant walls
+        const distCoef = this.distToPlane * (BLOCK_SIZE / 2 + this.altitude);
+        for (let renderY = 0; renderY < this.screenHeight; renderY++) {
+          const bufferStart = (renderY * this.screenWidth + renderX) * 4;
+          if (renderY < topOfWall) {
+            const distCoefCeil = this.distToPlane * (BLOCK_SIZE / 2 - this.altitude);
+            let pixel = this.halfHeight - renderY;
+            pixel = pixel === 0 ? 1 : pixel;
+            const straightDist = distCoefCeil / pixel;
+            const distToP = straightDist / cosBeta;
+            const x = this.camera.x + cosTheta * distToP;
+            const y = this.camera.y - sinTheta * distToP;
+            if (true) { // update the mapData to include ceilings (only on specified tiles)
+              // rgba values for css 'skyblue'
+              this.imageBuffer.data[bufferStart] = 135 + renderY * 0.5; // adds a little gradient to the sky
+              this.imageBuffer.data[bufferStart + 1] = 206;
+              this.imageBuffer.data[bufferStart + 2] = 235;
+              this.imageBuffer.data[bufferStart + 3] = 255;
+            } else {
+              // use this once there are ceiling tiles
+              const tileX = Math.floor(x % BLOCK_SIZE);
+              const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
+              const dataStart = (tileY * this.floorTextureData.width + tileX) * 4; // change to a different texture
+              for (let offset = 0; offset < 4; offset++) {
+                this.imageBuffer.data[bufferStart + offset] = this.floorTextureData.data[dataStart + offset];
               }
-            } else if (renderY < bottomOfWall) {
+            }
+          } else if (renderY < bottomOfWall) {
+            if (renderY - topOfWall < 1) {
+              // gray border
+              for (let offset = 0; offset < 4; offset++) {
+                this.imageBuffer.data[bufferStart + offset] = offset === 3 ? 200 : 0;
+              }
+            } else {
               // wall texture
               const texture = this.textures.get(TILE_TYPES.WALL);
               const tileX = this.wallSlice;
-              const tileY = Math.floor((renderY - top) / height * BLOCK_SIZE);
+              const tileY = Math.floor((renderY - topOfWall) / height * BLOCK_SIZE);
               const dataStart = (tileY * BLOCK_SIZE + tileX) * 4;
               for (let offset = 0; offset < 4; offset++) {
                 if (offset === 3) {
@@ -216,28 +222,28 @@ export class RayCaster {
                   this.imageBuffer.data[bufferStart + offset] = shade * texture.data[dataStart + offset];
                 }
               }
-            } else {
-              // floor texture
-              let pixel = renderY - this.halfHeight;
-              pixel = pixel === 0 ? 1 : pixel;
-              const straightDist = distCoef / pixel;
-              const distToP = straightDist / cosBeta;
-              const x = this.camera.x + cosTheta * distToP;
-              const y = this.camera.y - sinTheta * distToP;
-              const gridX = Math.floor(x / BLOCK_SIZE);
-              const gridY = Math.floor(y / BLOCK_SIZE);
-              const tileType = this.mapData[gridY] && this.mapData[gridY][gridX];
-              const texture = this.textures.get(tileType);
-              if (!texture) {
-                // landed outside of map
-                continue;
-              }
-              const tileX = Math.floor(x % BLOCK_SIZE);
-              const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
-              const dataStart = (tileY * texture.width + tileX) * 4;
-              for (let offset = 0; offset < 4; offset++) {
-                this.imageBuffer.data[bufferStart + offset] = texture.data[dataStart + offset];
-              }
+            }
+          } else {
+            // floor texture
+            let pixel = renderY - this.halfHeight;
+            pixel = pixel === 0 ? 1 : pixel;
+            const straightDist = distCoef / pixel;
+            const distToP = straightDist / cosBeta;
+            const x = this.camera.x + cosTheta * distToP;
+            const y = this.camera.y - sinTheta * distToP;
+            const gridX = Math.floor(x / BLOCK_SIZE);
+            const gridY = Math.floor(y / BLOCK_SIZE);
+            const tileType = this.mapData[gridY] && this.mapData[gridY][gridX];
+            const texture = this.textures.get(tileType);
+            if (!texture) {
+              // landed outside of map
+              continue;
+            }
+            const tileX = Math.floor(x % BLOCK_SIZE);
+            const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
+            const dataStart = (tileY * texture.width + tileX) * 4;
+            for (let offset = 0; offset < 4; offset++) {
+              this.imageBuffer.data[bufferStart + offset] = texture.data[dataStart + offset];
             }
           }
         }
