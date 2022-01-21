@@ -1,0 +1,5 @@
+everything except 'bricksx64.png'
+https://opengameart.org/content/64x-textures-an-overlays
+
+'bricksx64.png'
+https://opengameart.org/content/bricks-tiled-texture-64x64

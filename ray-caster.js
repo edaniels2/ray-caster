@@ -19,6 +19,16 @@ const MAP =
 '#                  #' +
 '#                  #' +
 '####################';
+const TILE_TYPES = { // probably expand this to allow different textures for each type
+  GRASS: 1,
+  PATH: 2,
+  // CEILING: 4,
+  WALL: 8,
+}
+const SPRITES = {
+  TREE: 0,
+};
+
 const FRAME_RATE = 24;
 const FOV = Math.PI / 3; // 60 degrees
 const BLOCK_SIZE = 64;
@@ -36,7 +46,7 @@ const USE_TEXTURES = true;
 export class RayCaster {
   /** @type {{x: number, y: number, t: number}} */
   camera;
-  /** @type {boolean[][]} */
+  /** @type {number[][]} */
   mapData;
   altitude = 0;
   jumpCounter = 0;
@@ -77,26 +87,48 @@ export class RayCaster {
     this.deltaT = FOV / this.numSlivers;
     /** @type {ImageData} */
     this.imageBuffer = new ImageData(this.screenWidth, this.screenHeight);
+    /** @type {Map<number, ImageData>} */
+    this.textures = new Map;
+    /** @type {Map<number, ImageData>} */
+    this.sprites = new Map;
+    /** @type {boolean} */
+    this.spritesReady = false;
     /** @type {boolean} */
     this.textureDataReady = false;
     /** @type {HTMLImageElement} */
     this.wallTexture = new Image(BLOCK_SIZE, BLOCK_SIZE);
-    this.wallTexture.src = './bricksx64.png'; // texture image from https://opengameart.org/content/bricks-tiled-texture-64x64
+    this.wallTexture.src = './textures/bricksx64.png';
     /** @type {HTMLImageElement} */
-    this.floorTexture = new Image(BLOCK_SIZE, BLOCK_SIZE);
-    this.floorTexture.src = './grass.png'; // texture image from https://opengameart.org/content/64x-textures-an-overlays
+    this.grassTexture = new Image(BLOCK_SIZE, BLOCK_SIZE);
+    this.grassTexture.src = './textures/LeavesOP.png';
+    /** @type {HTMLImageElement} */
+    this.pathTexture = new Image(BLOCK_SIZE, BLOCK_SIZE);
+    this.pathTexture.src = './textures/Stone.png';
+    /** @type {HTMLImageElement} */
+    this.treeSprite = new Image(BLOCK_SIZE, BLOCK_SIZE);
+    this.treeSprite.src = './sprites/Tree.png';
     this.minimapCanvas.style.width = this.mapSizeX * MINIMAP_TILE_SIZE + 'px';
     this.minimapCanvas.style.height = this.mapSizeY * MINIMAP_TILE_SIZE + 'px';
     this.minimapCanvas.width = this.mapSizeX * MINIMAP_TILE_SIZE;
     this.minimapCanvas.height = this.mapSizeY * MINIMAP_TILE_SIZE;
-    this.floorTexture.decode().then(() => {
-      this.floorTextureData = this.extractFloorData();
-      this.textureDataReady = this.floorTextureData && this.wallTextureData;
+    this.grassTexture.decode().then(() => {
+      this.textures.set(TILE_TYPES.GRASS, this.extractTextureData(this.grassTexture));
+      this.textureDataReady = this.textures.size === Object.keys(TILE_TYPES).length;
+      this.mapChanged = true;
+    });
+    this.pathTexture.decode().then(() => {
+      this.textures.set(TILE_TYPES.PATH, this.extractTextureData(this.pathTexture));
+      this.textureDataReady = this.textures.size === Object.keys(TILE_TYPES).length;
       this.mapChanged = true;
     });
     this.wallTexture.decode().then(() => {
-      this.wallTextureData = this.extractWallData();
-      this.textureDataReady = this.floorTextureData && this.wallTextureData;
+      this.textures.set(TILE_TYPES.WALL, this.extractTextureData(this.wallTexture));
+      this.textureDataReady = this.textures.size === Object.keys(TILE_TYPES).length;
+      this.mapChanged = true;
+    });
+    this.treeSprite.decode().then(() => {
+      this.sprites.set(SPRITES.TREE, this.extractTextureData(this.treeSprite));
+      this.spritesReady = this.sprites.size === Object.keys(SPRITES).length;
       this.mapChanged = true;
     });
   }
@@ -117,10 +149,9 @@ export class RayCaster {
    * Project the current state to the main canvas & minimap
    */
   cast() {
-    let imageBufferX = 0;
-
-    for (let i = 0; i < this.numSlivers; i++) {
-      const beta = FOV / 2 - i * this.deltaT;
+    let wallDistances = [];
+    for (let renderX = 0; renderX < this.numSlivers; renderX++) {
+      const beta = FOV / 2 - renderX * this.deltaT;
       const theta = this.normalizeAngle(this.camera.t + beta);
       let dist = REALLY_FAR;
       if (theta < Q1_BOUND) {
@@ -135,6 +166,7 @@ export class RayCaster {
 
       // fish eye correction
       dist *= Math.cos(this.normalizeAngle(this.camera.t - theta));
+      wallDistances.push(dist);
 
       const height = BLOCK_SIZE / dist * this.distToPlane;
       const top = this.halfHeight - height / 2 + this.altitude / dist * this.distToPlane;
@@ -147,47 +179,69 @@ export class RayCaster {
           const sinTheta = Math.sin(theta);
           const distCoef = this.distToPlane * (BLOCK_SIZE / 2 + this.altitude);
           const bottomOfWall = Math.floor(top + height);
-          let imageBufferY = 0;
-          for (let p = 0; p < this.screenHeight; p++) {
-            const bufferStart = (imageBufferY * this.screenWidth + imageBufferX) * 4;
-            if (p < top) {
-              // rgba values for css 'skyblue' - probably replace with a texture
-              this.imageBuffer.data[bufferStart] = 135;
-              this.imageBuffer.data[bufferStart + 1] = 206;
-              this.imageBuffer.data[bufferStart + 2] = 235;
-              this.imageBuffer.data[bufferStart + 3] = 255;
-            } else if (p < bottomOfWall) {
+          for (let renderY = 0; renderY < this.screenHeight; renderY++) {
+            const bufferStart = (renderY * this.screenWidth + renderX) * 4;
+            if (renderY < top) {
+              const distCoefCeil = this.distToPlane * (BLOCK_SIZE / 2 - this.altitude);
+              let pixel = this.halfHeight - renderY;
+              pixel = pixel === 0 ? 1 : pixel;
+              const straightDist = distCoefCeil / pixel;
+              const distToP = straightDist / cosBeta;
+              const x = this.camera.x + cosTheta * distToP;
+              const y = this.camera.y - sinTheta * distToP;
+              if (true) { // update the mapData to include ceilings (only on specified tiles)
+                // rgba values for css 'skyblue'
+                this.imageBuffer.data[bufferStart] = 135 + renderY * 0.5; // adds a little gradient to the sky
+                this.imageBuffer.data[bufferStart + 1] = 206;
+                this.imageBuffer.data[bufferStart + 2] = 235;
+                this.imageBuffer.data[bufferStart + 3] = 255;
+              } else {
+                const tileX = Math.floor(x % BLOCK_SIZE);
+                const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
+                const dataStart = (tileY * this.floorTextureData.width + tileX) * 4; // change to a different texture
+                for (let offset = 0; offset < 4; offset++) {
+                  this.imageBuffer.data[bufferStart + offset] = this.floorTextureData.data[dataStart + offset];
+                }
+              }
+            } else if (renderY < bottomOfWall) {
               // wall texture
+              const texture = this.textures.get(TILE_TYPES.WALL);
               const tileX = this.wallSlice;
-              const tileY = Math.floor((p - top) / height * BLOCK_SIZE);
+              const tileY = Math.floor((renderY - top) / height * BLOCK_SIZE);
               const dataStart = (tileY * BLOCK_SIZE + tileX) * 4;
               for (let offset = 0; offset < 4; offset++) {
                 if (offset === 3) {
-                  this.imageBuffer.data[bufferStart + offset] = this.wallTextureData.data[dataStart + offset];
+                  this.imageBuffer.data[bufferStart + offset] = texture.data[dataStart + offset];
                 } else {
-                  this.imageBuffer.data[bufferStart + offset] = shade * this.wallTextureData.data[dataStart + offset];
+                  this.imageBuffer.data[bufferStart + offset] = shade * texture.data[dataStart + offset];
                 }
               }
             } else {
               // floor texture
-              let pixel = p - this.halfHeight;
+              let pixel = renderY - this.halfHeight;
               pixel = pixel === 0 ? 1 : pixel;
               const straightDist = distCoef / pixel;
               const distToP = straightDist / cosBeta;
               const x = this.camera.x + cosTheta * distToP;
               const y = this.camera.y - sinTheta * distToP;
+              const gridX = Math.floor(x / BLOCK_SIZE);
+              const gridY = Math.floor(y / BLOCK_SIZE);
+              const tileType = this.mapData[gridY] && this.mapData[gridY][gridX];
+              const texture = this.textures.get(tileType);
+              if (!texture) {
+                // landed outside of map
+                continue;
+              }
               const tileX = Math.floor(x % BLOCK_SIZE);
               const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
-              const dataStart = (tileY * this.floorTextureData.width + tileX) * 4;
+              const dataStart = (tileY * texture.width + tileX) * 4;
               for (let offset = 0; offset < 4; offset++) {
-                this.imageBuffer.data[bufferStart + offset] = this.floorTextureData.data[dataStart + offset];
+                this.imageBuffer.data[bufferStart + offset] = texture.data[dataStart + offset];
               }
             }
-            imageBufferY++;
           }
-          imageBufferX++;
         }
-      } else {
+      } else { // probably just get rid of this
         // create some slight variation for texture
         let shade = Math.round(dist / 5);
         if (shade > 160) {
@@ -200,7 +254,42 @@ export class RayCaster {
         const g = Math.floor(Math.random() * 8);
         const b = Math.floor(Math.random() * 8);
         this.mainContext.fillStyle = `rgb(${shade + r}, ${shade + g}, ${shade + 10 + b})`;
-        this.mainContext.fillRect(i * SLIVER_SIZE, top, SLIVER_SIZE, height);
+        this.mainContext.fillRect(renderX * SLIVER_SIZE, top, SLIVER_SIZE, height);
+      }
+    }
+    // wip - draw a tree in the middle of the map
+    if (this.spritesReady) {
+      const sprite = this.sprites.get(SPRITES.TREE);
+      const spritePosition = BLOCK_SIZE * 15; // wip only - get the position from some configuration mapping
+      const spriteDist = this.getDistance(this.camera, {x: spritePosition, y: spritePosition});
+      const spriteMapX = spritePosition - this.camera.x;
+      const spriteMapY = spritePosition - this.camera.y;
+      let gamma = this.normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
+      gamma = this.normalizeAngle(this.camera.t + FOV / 2 - gamma);
+      const spriteScreenX = Math.round(gamma * this.screenWidth / FOV);
+      const spriteScreenY = this.halfHeight + Math.round(1 / (1 - spriteDist) + this.altitude / spriteDist * this.distToPlane); // not sure if this is generalizable, it may depend on the sprite image
+      const spriteHeight = this.distToPlane * BLOCK_SIZE / spriteDist;
+      const halfSprite = Math.round(spriteHeight / 2);
+      const spriteIncrement = sprite.height / spriteHeight;
+      let spriteDataX = 0;
+      for (let x = spriteScreenX - halfSprite; x < spriteScreenX + halfSprite; x++) {
+        if (spriteDist < wallDistances[x]) { // only draw if this column of the sprite is closer than the wall
+          let spriteDataY = -10; // adjustment to 'move' the sprite around in its tile, probably will need to be associated with the sprite image
+          for (let y = spriteScreenY - halfSprite; y < spriteScreenY + halfSprite; y++) {
+            if (y >= 0 && y < this.screenHeight && x >= 0 && x < this.screenWidth) {
+              const bufferStart = (y * this.screenWidth + x) * 4;
+              const dataStart = (Math.round(spriteDataY) * sprite.width + Math.round(spriteDataX)) * 4;
+              for (let offset = 0; offset < 4; offset++) {
+                const data = sprite.data[dataStart + offset];
+                if (data) { // skip transparent pixels
+                  this.imageBuffer.data[bufferStart + offset] = data;
+                }
+              }
+            }
+            spriteDataY += spriteIncrement;
+          }
+        }
+        spriteDataX += spriteIncrement;
       }
     }
     this.mainContext.putImageData(this.imageBuffer, 0, 0);
@@ -312,7 +401,7 @@ export class RayCaster {
       let gridX = Math.floor(data[dir].x / BLOCK_SIZE);
       if (gridX < 0 || gridX >= this.mapData[0].length || gridY < 0 || gridY >= this.mapData.length) {
         outOfBounds = true;
-      } else if (this.mapData[gridY][gridX]) {
+      } else if (this.mapData[gridY][gridX] === TILE_TYPES.WALL) {
         hit = true;
         if (dir === 'vertical') {
           vSlice = Math.floor(data[dir].x) % BLOCK_SIZE;
@@ -328,7 +417,7 @@ export class RayCaster {
         gridX = Math.floor(data[dir].x / BLOCK_SIZE);
         if (gridX < 0 || gridX >= this.mapData[0].length || gridY < 0 || gridY >= this.mapData.length) {
           outOfBounds = true;
-        } else if (this.mapData[gridY][gridX]) {
+        } else if (this.mapData[gridY][gridX] === TILE_TYPES.WALL) {
           hit = true;
           if (dir === 'vertical') {
             vSlice = Math.floor(data[dir].x) % BLOCK_SIZE;
@@ -376,7 +465,7 @@ export class RayCaster {
     this.minimapContext.stroke(new Path2D(pathString));
     for (let i = 0; i < this.mapSizeY; i++) {
       for (let j = 0; j < this.mapSizeX; j++) {
-        if (this.mapData[i][j]) {
+        if (this.mapData[i][j] === TILE_TYPES.WALL) {
           this.minimapContext.fillStyle = '#000000';
           this.minimapContext.fillRect(
             j * MINIMAP_TILE_SIZE,
@@ -430,12 +519,22 @@ export class RayCaster {
       let row = [];
       for (let j = 0; j < this.mapSizeX; j++) {
         let char = this.initialMap[i * this.mapSizeX + j];
-        if (char === '.') {
-          // place camera in the middle of the block
-          camera.x = Math.round(j * BLOCK_SIZE + BLOCK_SIZE / 2);
-          camera.y = Math.round(i * BLOCK_SIZE + BLOCK_SIZE / 2);
+        switch (char) {
+          case '.':
+            // place camera in the middle of the block
+            camera.x = Math.round(j * BLOCK_SIZE + BLOCK_SIZE / 2);
+            camera.y = Math.round(i * BLOCK_SIZE + BLOCK_SIZE / 2);
+          case ' ':
+            row.push(TILE_TYPES.GRASS);
+            break;
+          case '#':
+            row.push(TILE_TYPES.WALL);
+            break;
+          case '_':
+            row.push(TILE_TYPES.PATH);
+            break;
+          // should put a default but for now just make sure the map string is valid
         }
-        row.push(char === '#');
       }
       initialMap.push(row);
     }
@@ -447,7 +546,8 @@ export class RayCaster {
       const targetX = this.camera.x + Math.cos(this.camera.t) * MOVE_SPEED;
       const targetY = this.camera.y - Math.sin(this.camera.t) * MOVE_SPEED;
       const gridY = Math.floor(targetY / BLOCK_SIZE);
-      if (!this.mapData[gridY] || !this.mapData[gridY][Math.floor(targetX / BLOCK_SIZE)]) {
+      const gridX = Math.floor(targetX / BLOCK_SIZE);
+      if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
         this.camera.x = targetX;
         this.camera.y = targetY;
       }
@@ -455,7 +555,9 @@ export class RayCaster {
     if (this.movingBack) {
       const targetX = this.camera.x - Math.cos(this.camera.t) * MOVE_SPEED;
       const targetY = this.camera.y + Math.sin(this.camera.t) * MOVE_SPEED;
-      if (!this.mapData[Math.floor(targetY / BLOCK_SIZE)] || !this.mapData[Math.floor(targetY / BLOCK_SIZE)][Math.floor(targetX / BLOCK_SIZE)]) {
+      const gridY = Math.floor(targetY / BLOCK_SIZE);
+      const gridX = Math.floor(targetX / BLOCK_SIZE);
+      if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
         this.camera.x = targetX;
         this.camera.y = targetY;
       }
@@ -470,10 +572,8 @@ export class RayCaster {
     }
     if (this.jumpCounter) {
       const x = 25 - this.jumpCounter;
-      // got this from a polynomial regression, not sure if I like it though
+      // got this from a polynomial regression, creates a little push-off/landing bounce in the jump
       this.altitude = 0.0018 * Math.pow(x, 4) - 0.0861 * Math.pow(x, 3) + 1.1798 * Math.pow(x, 2) - 3.5297 * x;
-      // this one is just a plain parabola, so no push-off/landing effect
-      // this.altitude = -Math.pow(this.jumpCounter / 3 - 4, 2) + 16;
       this.jumpCounter--;
     } else {
       this.altitude = 0;
@@ -524,7 +624,7 @@ export class RayCaster {
     const { x, y } = this.getCanvasCoords(mouse, this.minimapCanvas);
     const gridX = Math.floor(x / MINIMAP_TILE_SIZE);
     const gridY = Math.floor(y / MINIMAP_TILE_SIZE);
-    const removing = this.mapData[gridY][gridX];
+    const removing = this.mapData[gridY][gridX] === TILE_TYPES.WALL;
     toggleTile.call(this, mouse);
     this.minimapCanvas.onpointermove = toggleTile.bind(this);
 
@@ -533,10 +633,10 @@ export class RayCaster {
       const gridX = Math.floor(x / MINIMAP_TILE_SIZE);
       const gridY = Math.floor(y / MINIMAP_TILE_SIZE);
       if (removing) {
-        this.mapData[gridY][gridX] = false;
+        this.mapData[gridY][gridX] = TILE_TYPES.GRASS;
         this.minimapContext.clearRect(gridX * MINIMAP_TILE_SIZE + 1, gridY * MINIMAP_TILE_SIZE + 1, MINIMAP_TILE_SIZE - 2, MINIMAP_TILE_SIZE - 2);
       } else {
-        this.mapData[gridY][gridX] = true;
+        this.mapData[gridY][gridX] = TILE_TYPES.WALL;
         this.minimapContext.fillStyle = '#000000';
         this.minimapContext.fillRect(gridX * MINIMAP_TILE_SIZE, gridY * MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
       }
@@ -555,25 +655,13 @@ export class RayCaster {
     return { x, y };
   }
 
-  extractFloorData() {
+  extractTextureData(/** @type {HTMLImageElement} */image) {
     const tempCanvas = document.createElement('canvas');
     document.body.appendChild(tempCanvas);
     const ctx = tempCanvas.getContext('2d');
     tempCanvas.width = BLOCK_SIZE;
     tempCanvas.height = BLOCK_SIZE;
-    ctx.drawImage(this.floorTexture, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
-    const imageData = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE);
-    tempCanvas.remove();
-    return imageData;
-  }
-
-  extractWallData() {
-    const tempCanvas = document.createElement('canvas');
-    document.body.appendChild(tempCanvas);
-    const ctx = tempCanvas.getContext('2d');
-    tempCanvas.width = BLOCK_SIZE;
-    tempCanvas.height = BLOCK_SIZE;
-    ctx.drawImage(this.wallTexture, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
+    ctx.drawImage(image, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
     const imageData = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE);
     tempCanvas.remove();
     return imageData;
