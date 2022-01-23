@@ -18,48 +18,17 @@
     }
   </style>
   <script type="module">
-    import { RayCaster } from './ray-caster.js';
-    window.init = init;
-    const map =
-    '##############################' +
-    '#                            #' +
-    '#                            #' +
-    '#                            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#          ###__###          #' +
-    '#          #______#          #' +
-    '#   ########______########   #' +
-    '#   __________  __________   #' +
-    '#   __________  __________   #' +
-    '#   ########______########   #' +
-    '#          #______#          #' +
-    '#          ###__###          #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#            #__#            #' +
-    '#    .                       #' +
-    '#                            #' +
-    '#                            #' +
-    '##############################';
-    function init() {
+    import { Renderer } from './renderer.js';
+
+    (function init() {
       const canvas = document.getElementById('render');
       const minimap = document.getElementById('minimap');
-      const renderer = new RayCaster(canvas, minimap, map, 30, 30);
+      const renderer = new Renderer(canvas, minimap);
       renderer.start();
-    }
+    })();
   </script>
 </head>
-<body onload="init()">
+<body>
   <canvas id="render" height="200" width="320"></canvas>
   <canvas id="minimap"></canvas>
 </body>

@@ -3,6 +3,7 @@ vague goals:
   - add different wall/floor types and map to different textures (started, 2 types of floor)
   - add some kind of translation mechanism to the minimap so the worldmap can be arbitrarily larger
   - expand map editor to configure all those different textures and sprites
-  - it's messy - heavy refactoring
   - maybe add strafing motion?
   - some kind of objective
+  - maybe use the same technique as jumping to give a little walking bounce to player movement
+  - pointer controls?
