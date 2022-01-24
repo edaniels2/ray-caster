@@ -90,6 +90,10 @@ export class Minimap {
     return true;
   }
 
+  listenForChanges(fn) {
+    this.canvas.addEventListener('mapChanged', fn);
+  }
+
   editMap(/** @type {PointerEvent} */mouse) {
     const { x, y } = this.getCanvasCoords(mouse, this.canvas);
     const gridX = Math.floor(x / MINIMAP_TILE_SIZE);
@@ -104,18 +108,18 @@ export class Minimap {
       const gridY = Math.floor(y / MINIMAP_TILE_SIZE);
       if (removing) {
         this.mapData[gridY][gridX] = TILE_TYPES.GRASS;
-        this.minimapContext.clearRect(gridX * MINIMAP_TILE_SIZE + 1, gridY * MINIMAP_TILE_SIZE + 1, MINIMAP_TILE_SIZE - 2, MINIMAP_TILE_SIZE - 2);
+        this.ctx.clearRect(gridX * MINIMAP_TILE_SIZE + 1, gridY * MINIMAP_TILE_SIZE + 1, MINIMAP_TILE_SIZE - 2, MINIMAP_TILE_SIZE - 2);
       } else {
         this.mapData[gridY][gridX] = TILE_TYPES.WALL;
-        this.minimapContext.fillStyle = '#000000';
-        this.minimapContext.fillRect(gridX * MINIMAP_TILE_SIZE, gridY * MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(gridX * MINIMAP_TILE_SIZE, gridY * MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
       }
     }
   }
   
   endEditMap() {
     this.canvas.onpointermove = null;
-    this.mapChanged = true;
+    this.canvas.dispatchEvent(new CustomEvent('mapChanged'));
   }
   
   getCanvasCoords(mouse, canvas) {

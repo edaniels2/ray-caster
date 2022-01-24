@@ -9,6 +9,7 @@ import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, 
  * 
  */
 export class Renderer {
+  mapChanged = false;
 
   constructor(
     mainCanvas,
@@ -32,6 +33,7 @@ export class Renderer {
 
   start() {
     this.minimap.init();
+    this.minimap.listenForChanges(() => this.mapChanged = true);
     Input.init(this.camera);
     TextureLoader.loadTextures().then(textures => {
       /** @type {RayCaster} */
