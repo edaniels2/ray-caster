@@ -1,3 +1,5 @@
+import { FRAME_RATE } from './constants.js';
+
 export class Input {
   static init(camera) {
     document.addEventListener('keyup', handleInput.bind(camera));
@@ -20,7 +22,7 @@ export class Input {
           break;
         case ' ':
           if (!this.jumpCounter) {
-            this.jumpCounter = 24;
+            this.jumpCounter = FRAME_RATE;
           }
       }
     }

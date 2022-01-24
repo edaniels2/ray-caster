@@ -6,10 +6,11 @@ import { TextureLoader } from './texture-loader.js';
 import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
 
 /**
- * 
+ * Main entry point to the render engine. Responsible for initial setup
  */
 export class Renderer {
   mapChanged = false;
+  prevTimestamp = 0;
 
   constructor(
     mainCanvas,
@@ -38,11 +39,15 @@ export class Renderer {
     TextureLoader.loadTextures().then(textures => {
       /** @type {RayCaster} */
       this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap, textures);
-      setInterval(this.update.bind(this), 1000 / FRAME_RATE);
+      setInterval(() => requestAnimationFrame(this.update.bind(this)), 1000 / FRAME_RATE);
     });
   }
 
-  update() {
+  update(/** @type {DOMHighResTimeStamp} */timestamp) {
+    if (timestamp === this.prevTimestamp) {
+      this.prevTimestamp = timestamp;
+      return;
+    }
     if (this.camera.movingFwd) {
       const targetX = this.camera.x + Math.cos(this.camera.t) * MOVE_SPEED;
       const targetY = this.camera.y - Math.sin(this.camera.t) * MOVE_SPEED;
@@ -71,8 +76,9 @@ export class Renderer {
       this.camera.t -= this.deltaT * TURN_SPEED;
       this.camera.t = normalizeAngle(this.camera.t);
     }
-    if (this.camera.jumpCounter) {
-      const x = 25 - this.camera.jumpCounter;
+    if (this.camera.jumpCounter > 0) {
+      // this curve was initially set to 'land' in 24 frames, generalized to any frame rate
+      const x = (FRAME_RATE - this.camera.jumpCounter) * 24 / FRAME_RATE;
       // got this from a polynomial regression, creates a little push-off/landing bounce in the jump
       this.camera.altitude = 0.0018 * Math.pow(x, 4) - 0.0861 * Math.pow(x, 3) + 1.1798 * Math.pow(x, 2) - 3.5297 * x;
       this.camera.jumpCounter--;
@@ -87,6 +93,7 @@ export class Renderer {
     this.camera.prevCamX = this.camera.x;
     this.camera.prevCamY = this.camera.y;
     this.camera.prevCamT = this.camera.t;
+    this.prevTimestamp = timestamp;
   }
 
   loadMap(mapString) {
