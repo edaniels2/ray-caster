@@ -126,7 +126,7 @@ export class RayCaster {
     }
 
     // wip - draw a tree in the middle of the map
-  // once there are multiple sprites on screen they'll need to be sorted by distance far to near
+    // once there are multiple sprites on screen they'll need to be sorted by distance far to near
     const sprite = this.sprites.get(SPRITES.TREE);
     const spritePosition = BLOCK_SIZE * 15; // wip only - get the position from some configuration mapping
     const spriteDist = this.getDistance(this.camera, {x: spritePosition, y: spritePosition});
@@ -135,15 +135,22 @@ export class RayCaster {
     let gamma = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
     gamma = normalizeAngle(this.camera.t + FOV / 2 - gamma);
     const spriteScreenX = Math.round(gamma * this.screenWidth / FOV);
-    const spriteScreenY = this.halfHeight + Math.round(1 / (1 - spriteDist) + this.camera.altitude / spriteDist * this.distToPlane); // not sure if this is generalizable, it may depend on the sprite image
+    const altitudeCorrection = this.camera.altitude / spriteDist * this.distToPlane;
+    const spriteScreenY = this.halfHeight + Math.round(1 / (1 - spriteDist) + altitudeCorrection);
     const spriteHeight = this.distToPlane * BLOCK_SIZE / spriteDist;
     const halfSprite = Math.round(spriteHeight / 2);
     const spriteIncrement = sprite.height / spriteHeight;
     let spriteDataX = 0;
+    // not sure if this is generalizable, it may depend on the sprite image
+    const fishEyeCorrection = -Math.cos(Q2_BOUND * Math.abs(this.screenWidth / 2 - spriteScreenX) / this.screenWidth) * 2 * this.screenWidth / spriteDist + 4;
+    const correctedScreenY = Math.floor(spriteScreenY + fishEyeCorrection);
+
     for (let x = spriteScreenX - halfSprite; x < spriteScreenX + halfSprite; x++) {
-      if (spriteDist < wallDistances[x]) { // only draw if this column of the sprite is closer than the wall
-        let spriteDataY = -10; // adjustment to 'move' the sprite around in its tile, probably will need to be associated with the sprite image
-        for (let y = spriteScreenY - halfSprite; y < spriteScreenY + halfSprite; y++) {
+      if (!wallDistances[x] || spriteDist < wallDistances[x]) {
+        /** adjustment to 'move' the sprite around in its tile, probably will need to be associated with
+         * the sprite image. */
+        let spriteDataY = -10;
+        for (let y = correctedScreenY - halfSprite; y < correctedScreenY + halfSprite; y++) {
           if (y >= 0 && y < this.screenHeight && x >= 0 && x < this.screenWidth) {
             const bufferStart = (y * this.screenWidth + x) * 4;
             const dataStart = (Math.round(spriteDataY) * sprite.width + Math.round(spriteDataX)) * 4;
