@@ -5,9 +5,6 @@ export class Camera {
   movingBack = false;
   turningLeft = false;
   turningRight = false;
-  prevCamX = null;
-  prevCamY = null;
-  prevCamT = null;
   x = 0;
   y = 0;
   t = 0;

@@ -9,7 +9,7 @@ import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, 
  * Main entry point to the render engine. Responsible for initial setup
  */
 export class Renderer {
-  mapChanged = false;
+  mapChanged = true;
   prevTimestamp = 0;
 
   constructor(
@@ -50,6 +50,7 @@ export class Renderer {
     }
     const moveSpeed = MOVE_SPEED * 24 / FRAME_RATE;
     const turnSpeed = TURN_SPEED * 24 / FRAME_RATE;
+    let positionChanged = false;
     if (this.camera.movingFwd) {
       const targetX = this.camera.x + Math.cos(this.camera.t) * moveSpeed;
       const targetY = this.camera.y - Math.sin(this.camera.t) * moveSpeed;
@@ -58,6 +59,7 @@ export class Renderer {
       if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
         this.camera.x = targetX;
         this.camera.y = targetY;
+        positionChanged = true;
       }
     }
     if (this.camera.movingBack) {
@@ -68,15 +70,18 @@ export class Renderer {
       if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
         this.camera.x = targetX;
         this.camera.y = targetY;
+        positionChanged = true;
       }
     }
     if (this.camera.turningLeft) {
       this.camera.t += this.deltaT * turnSpeed;
       this.camera.t = normalizeAngle(this.camera.t);
+      positionChanged = true;
     }
     if (this.camera.turningRight) {
       this.camera.t -= this.deltaT * turnSpeed;
       this.camera.t = normalizeAngle(this.camera.t);
+      positionChanged = true;
     }
     if (this.camera.jumpCounter > 0) {
       // this curve was initially set to 'land' in 24 frames, generalized to any frame rate
@@ -84,17 +89,13 @@ export class Renderer {
       // got this from a polynomial regression, creates a little push-off/landing bounce in the jump
       this.camera.altitude = 0.0018 * Math.pow(x, 4) - 0.0861 * Math.pow(x, 3) + 1.1798 * Math.pow(x, 2) - 3.5297 * x;
       this.camera.jumpCounter--;
-    } else {
-      this.camera.altitude = 0;
+      positionChanged = true;
     }
-    if (this.camera.x !== this.camera.prevCamX || this.camera.y !== this.camera.prevCamY || this.camera.t !== this.camera.prevCamT || this.mapChanged || this.camera.altitude) {
+    if (positionChanged || this.mapChanged) {
       this.minimap.drawMiniMap(this.mapData, this.camera);
       this.rayCaster.cast();
       this.mapChanged = false;
     }
-    this.camera.prevCamX = this.camera.x;
-    this.camera.prevCamY = this.camera.y;
-    this.camera.prevCamT = this.camera.t;
     this.prevTimestamp = timestamp;
   }
 
