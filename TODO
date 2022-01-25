@@ -7,3 +7,4 @@ vague goals:
   - some kind of objective
   - maybe use the same technique as jumping to give a little walking bounce to player movement
   - pointer controls?
+  - cache calculated trig functions; they are somewhat costly and there is a limited number of possible values

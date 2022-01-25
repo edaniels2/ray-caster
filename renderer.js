@@ -48,9 +48,11 @@ export class Renderer {
       this.prevTimestamp = timestamp;
       return;
     }
+    const moveSpeed = MOVE_SPEED * 24 / FRAME_RATE;
+    const turnSpeed = TURN_SPEED * 24 / FRAME_RATE;
     if (this.camera.movingFwd) {
-      const targetX = this.camera.x + Math.cos(this.camera.t) * MOVE_SPEED;
-      const targetY = this.camera.y - Math.sin(this.camera.t) * MOVE_SPEED;
+      const targetX = this.camera.x + Math.cos(this.camera.t) * moveSpeed;
+      const targetY = this.camera.y - Math.sin(this.camera.t) * moveSpeed;
       const gridY = Math.floor(targetY / BLOCK_SIZE);
       const gridX = Math.floor(targetX / BLOCK_SIZE);
       if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
@@ -59,8 +61,8 @@ export class Renderer {
       }
     }
     if (this.camera.movingBack) {
-      const targetX = this.camera.x - Math.cos(this.camera.t) * MOVE_SPEED;
-      const targetY = this.camera.y + Math.sin(this.camera.t) * MOVE_SPEED;
+      const targetX = this.camera.x - Math.cos(this.camera.t) * moveSpeed;
+      const targetY = this.camera.y + Math.sin(this.camera.t) * moveSpeed;
       const gridY = Math.floor(targetY / BLOCK_SIZE);
       const gridX = Math.floor(targetX / BLOCK_SIZE);
       if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
@@ -69,11 +71,11 @@ export class Renderer {
       }
     }
     if (this.camera.turningLeft) {
-      this.camera.t += this.deltaT * TURN_SPEED;
+      this.camera.t += this.deltaT * turnSpeed;
       this.camera.t = normalizeAngle(this.camera.t);
     }
     if (this.camera.turningRight) {
-      this.camera.t -= this.deltaT * TURN_SPEED;
+      this.camera.t -= this.deltaT * turnSpeed;
       this.camera.t = normalizeAngle(this.camera.t);
     }
     if (this.camera.jumpCounter > 0) {
