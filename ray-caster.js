@@ -127,9 +127,10 @@ export class RayCaster {
 
     // wip - draw a tree in the middle of the map
     // once there are multiple sprites on screen they'll need to be sorted by distance far to near
+    // TODO: figure out why no part of the sprite is drawn when `spriteScreenX` < 0
     const sprite = this.sprites.get(SPRITES.TREE);
     const spritePosition = BLOCK_SIZE * 15; // wip only - get the position from some configuration mapping
-    const spriteDist = this.getDistance(this.camera, {x: spritePosition, y: spritePosition});
+    const spriteDist = this.getDistance(this.camera, {x: spritePosition, y: spritePosition}) - BLOCK_SIZE / 2;
     const spriteMapX = spritePosition - this.camera.x;
     const spriteMapY = spritePosition - this.camera.y;
     let gamma = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
@@ -146,19 +147,21 @@ export class RayCaster {
     const correctedScreenY = Math.floor(spriteScreenY + fishEyeCorrection);
 
     for (let x = spriteScreenX - halfSprite; x < spriteScreenX + halfSprite; x++) {
-      if (!wallDistances[x] || spriteDist < wallDistances[x]) {
+      if (x >= 0 && x < this.screenWidth && (!wallDistances[x] || spriteDist < wallDistances[x])) {
         /** adjustment to 'move' the sprite around in its tile, probably will need to be associated with
          * the sprite image. */
-        let spriteDataY = -10;
+        let spriteDataY = -8;
         for (let y = correctedScreenY - halfSprite; y < correctedScreenY + halfSprite; y++) {
-          if (y >= 0 && y < this.screenHeight && x >= 0 && x < this.screenWidth) {
+          if (y >= 0 && y < this.screenHeight) {
             const bufferStart = (y * this.screenWidth + x) * 4;
-            const dataStart = (Math.round(spriteDataY) * sprite.width + Math.round(spriteDataX)) * 4;
-            for (let offset = 0; offset < 4; offset++) {
+            const dataStart = (Math.floor(spriteDataY) * sprite.width + Math.floor(spriteDataX)) * 4;
+            // start on the alpha channel, if it's blank the pixel is transparent so just move on
+            for (let offset = 3; offset >= 0; offset--) {
               const data = sprite.data[dataStart + offset];
-              if (data) { // skip transparent pixels
-                this.imageBuffer.data[bufferStart + offset] = data;
+              if (!data && offset === 3) {
+                break;
               }
+              this.imageBuffer.data[bufferStart + offset] = data;
             }
           }
           spriteDataY += spriteIncrement;
