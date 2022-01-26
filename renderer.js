@@ -6,7 +6,7 @@ import { TextureLoader } from './texture-loader.js';
 import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
 
 /**
- * Main entry point to the render engine. Responsible for initial setup
+ * Main entry point to the render engine. Responsible for initial setup and scheduling frame updates
  */
 export class Renderer {
   mapChanged = true;

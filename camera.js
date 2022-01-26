@@ -1,3 +1,6 @@
+/**
+ * Shared object for tracking camera position, angle, and movement.
+ */
 export class Camera {
   altitude = 0;
   jumpCounter = 0;

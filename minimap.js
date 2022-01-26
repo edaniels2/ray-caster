@@ -2,7 +2,7 @@ import { Camera } from './camera.js';
 import { BLOCK_SIZE, MINIMAP_TILE_SIZE, TILE_TYPES } from './constants.js';
 
 /**
- * 
+ * Draws the minimap given current camera condition. Also handles the map editor functionality.
  */
 export class Minimap {
   constructor(camera, canvas, mapSizeX, mapSizeY, mapData) {

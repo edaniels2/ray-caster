@@ -2,13 +2,20 @@ import { Camera } from './camera.js';
 import { Minimap } from './minimap.js';
 import { BLOCK_SIZE, FOV, REALLY_FAR, Q1_BOUND, Q2_BOUND, Q3_BOUND, Q4_BOUND, SPRITES, TILE_TYPES } from './constants.js';
 
+/**
+ * The main rendering engine, casts a ray out from the camera location for each vertical sliver of the
+ * field of view * and calculates distance to walls, then overlays sprites at their specified location.
+ *
+ * The basic algorithm and most of the math are drawn from 'Implementing a Ray Caster` posts by Liam Wynn
+ * https://wynnliam.github.io/blog/
+ */
 export class RayCaster {
   wallSlice = null;
 
-  constructor(camera, distToPlane, mapData, canvas, numSlivers, deltaT, minimap, textures) {
+  constructor(camera, distToPlane, mapData, canvas, numSlivers, deltaT, minimap, images) {
     /** @type {Minimap} */this.minimap = minimap;
-    /** @type {ImageData} */this.textures = textures.textures;
-    /** @type {ImageData} */this.sprites = textures.sprites;
+    /** @type {Map<number, ImageData>} */this.textures = images.textures;
+    /** @type {Map<number, ImageData>} */this.sprites = images.sprites;
     /** @type {Camera} */this.camera = camera;
     /** @type {number} */this.distToPlane = distToPlane;
     /** @type {number[][]} */this.mapData = mapData;
@@ -23,6 +30,7 @@ export class RayCaster {
 
   /**
    * Project the current state to the main canvas & minimap
+   * TODO: break this into smaller focused functions and clean some things up
    */
   cast() {
     let wallDistances = [];
@@ -65,7 +73,7 @@ export class RayCaster {
           const y = this.camera.y - sinTheta * distToP;
           if (true) { // update the mapData to include ceilings (only on specified tiles)
             // rgba values for css 'skyblue'
-            this.imageBuffer.data[bufferStart] = 135 + renderY * 0.5; // adds a little gradient to the sky
+            this.imageBuffer.data[bufferStart] = 135 + renderY * 0.5 + 15; // adds a little gradient to the sky
             this.imageBuffer.data[bufferStart + 1] = 206;
             this.imageBuffer.data[bufferStart + 2] = 235;
             this.imageBuffer.data[bufferStart + 3] = 255;
@@ -127,18 +135,17 @@ export class RayCaster {
 
     // wip - draw a tree in the middle of the map
     // once there are multiple sprites on screen they'll need to be sorted by distance far to near
-    // TODO: figure out why no part of the sprite is drawn when `spriteScreenX` < 0
     const sprite = this.sprites.get(SPRITES.TREE);
     const spritePosition = BLOCK_SIZE * 15; // wip only - get the position from some configuration mapping
-    const spriteDist = this.getDistance(this.camera, {x: spritePosition, y: spritePosition}) - BLOCK_SIZE / 2;
+    const spriteDist = this.getDistance(this.camera, {x: spritePosition, y: spritePosition}) - sprite.width / 2;
     const spriteMapX = spritePosition - this.camera.x;
     const spriteMapY = spritePosition - this.camera.y;
     let gamma = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
     gamma = normalizeAngle(this.camera.t + FOV / 2 - gamma);
-    const spriteScreenX = Math.round(gamma * this.screenWidth / FOV);
+    let spriteScreenX = Math.round(gamma * this.screenWidth / FOV);
     const altitudeCorrection = this.camera.altitude / spriteDist * this.distToPlane;
     const spriteScreenY = this.halfHeight + Math.round(1 / (1 - spriteDist) + altitudeCorrection);
-    const spriteHeight = this.distToPlane * BLOCK_SIZE / spriteDist;
+    const spriteHeight = this.distToPlane * sprite.height / spriteDist;
     const halfSprite = Math.round(spriteHeight / 2);
     const spriteIncrement = sprite.height / spriteHeight;
     let spriteDataX = 0;
@@ -146,6 +153,9 @@ export class RayCaster {
     const fishEyeCorrection = -Math.cos(Q2_BOUND * Math.abs(this.screenWidth / 2 - spriteScreenX) / this.screenWidth) * 2 * this.screenWidth / spriteDist + 4;
     const correctedScreenY = Math.floor(spriteScreenY + fishEyeCorrection);
 
+    if (spriteScreenX > this.screenWidth + halfSprite) {
+      spriteScreenX -= Math.floor(this.screenWidth * 2 * Math.PI / FOV); // wrap around the circle
+    }
     for (let x = spriteScreenX - halfSprite; x < spriteScreenX + halfSprite; x++) {
       if (x >= 0 && x < this.screenWidth && (!wallDistances[x] || spriteDist < wallDistances[x])) {
         /** adjustment to 'move' the sprite around in its tile, probably will need to be associated with

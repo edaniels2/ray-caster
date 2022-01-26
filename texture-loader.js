@@ -1,5 +1,8 @@
 import { BLOCK_SIZE, TILE_TYPES, SPRITES, IMAGE_SOURCES } from './constants.js';
 
+/**
+ * Extracts ImageData objects from external files and maps them to their type defined in 'constants.js'
+ */
 export class TextureLoader {
   /**
    * @return {Promise<{sprites: Map<number, ImageData>, textures: Map<number, ImageData>}>}

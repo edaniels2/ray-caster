@@ -1,5 +1,9 @@
 import { FRAME_RATE } from './constants.js';
 
+/**
+ * Handle user input.
+ * TODO: add touch/pointer input handling
+ */
 export class Input {
   static init(camera) {
     document.addEventListener('keyup', handleInput.bind(camera));
