@@ -1,5 +1,5 @@
 import { Camera } from './camera.js';
-import { BLOCK_SIZE, MINIMAP_TILE_SIZE, TILE_TYPES } from './constants.js';
+import { BLOCK_SIZE, MINIMAP_TILE_SIZE, Q1_BOUND, Q2_BOUND, Q3_BOUND, TILE_TYPES } from './constants.js';
 
 /**
  * Draws the minimap given current camera condition. Also handles the map editor functionality.
@@ -58,28 +58,26 @@ export class Minimap {
     this.ctx.fill();
   }
 
-  miniMapRay(/** @type {number} */alpha, /** @type {number} */q) {
+  miniMapRay(/** @type {number} */alpha) {
     const xPos = this.camera.x / BLOCK_SIZE * MINIMAP_TILE_SIZE;
     const yPos = this.camera.y / BLOCK_SIZE * MINIMAP_TILE_SIZE;
     const rayLength = MINIMAP_TILE_SIZE * 10;
     let xEnd, yEnd;
-    switch(q) {
-      case 1:
-        xEnd = xPos + Math.cos(alpha) * rayLength;
-        yEnd = yPos - Math.sin(alpha) * rayLength;
-        break;
-      case 2:
-        xEnd = xPos - Math.sin(alpha) * rayLength;
-        yEnd = yPos - Math.cos(alpha) * rayLength;
-        break;
-      case 3:
-        xEnd = xPos - Math.cos(alpha) * rayLength;
-        yEnd = yPos + Math.sin(alpha) * rayLength;
-        break;
-      case 4:
-        xEnd = xPos + Math.sin(alpha) * rayLength;
-        yEnd = yPos + Math.cos(alpha) * rayLength;
-        break;
+    if (alpha < Q1_BOUND) {
+      xEnd = xPos + Math.cos(alpha) * rayLength;
+      yEnd = yPos - Math.sin(alpha) * rayLength;
+    } else if (alpha < Q2_BOUND) {
+      alpha -= Q1_BOUND;
+      xEnd = xPos - Math.sin(alpha) * rayLength;
+      yEnd = yPos - Math.cos(alpha) * rayLength;
+    } else if (alpha < Q3_BOUND) {
+      alpha -= Q2_BOUND;
+      xEnd = xPos - Math.cos(alpha) * rayLength;
+      yEnd = yPos + Math.sin(alpha) * rayLength;
+    } else {
+      alpha -= Q3_BOUND;
+      xEnd = xPos + Math.sin(alpha) * rayLength;
+      yEnd = yPos + Math.cos(alpha) * rayLength;
     }
     this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.03)';
     this.ctx.beginPath();

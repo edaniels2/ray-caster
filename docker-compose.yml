@@ -7,3 +7,9 @@ services:
       - ./:/usr/share/nginx/html
     ports:
       - "1234:80"
+  wasm:
+    build:
+      context: ./wasm
+      dockerfile: wasm.dockerfile
+    volumes:
+      - ./wasm:/usr/src/app

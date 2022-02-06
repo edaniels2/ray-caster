@@ -1,0 +1,28 @@
+{
+  "name": "ray-caster-wasm",
+  "version": "1.0.0",
+  "description": "Trial run of moving heavy calculations to wasm module",
+  "main": "index.js",
+  "dependencies": {
+    "@assemblyscript/loader": "^0.19.22"
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.19.22"
+  },
+  "scripts": {
+    "test": "node tests",
+    "asbuild:untouched": "asc assembly/index.ts --target debug",
+    "asbuild:optimized": "asc assembly/index.ts --target release",
+    "asbuild": "npm run asbuild:untouched && npm run asbuild:optimized"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/edaniels2/ray-caster.git"
+  },
+  "author": "Eric Daniels",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/edaniels2/ray-caster/issues"
+  },
+  "homepage": "https://github.com/edaniels2/ray-caster#readme"
+}

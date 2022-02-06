@@ -1,0 +1,3 @@
+node_modules/
+*.wasm.map
+*.asm.js
