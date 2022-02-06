@@ -13,9 +13,10 @@ import { TextureLoader } from './texture-loader.js';
  */
 
 export class RayCaster {
+  /** @type {Uint8ClampedArray} */imageBufferLiveView = null;
+  /** @type {number} */mapPtr = null;
   /** @type {number} */wallSlice = null;
   wasmCalculations = null;
-  imageBufferLiveView = null;
 
   constructor(camera, distToPlane, mapData, canvas, numSlivers, deltaT, minimap) {
     /** @type {Minimap} */this.minimap = minimap;
@@ -35,12 +36,21 @@ export class RayCaster {
     return new Promise(resolve => TextureLoader.loadTextures().then(images => {
       const textures = images.textures;
       const sprites = images.sprites;
+      this.minimap.listenForChanges(() => {
+        if (this.mapPtr) {
+          const mapDataLinear = this.mapData.flat();
+          this.wasmCalculations.__unpin(this.mapPtr);
+          this.mapPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear);
+          this.wasmCalculations.setMapData(this.mapPtr, mapDataLinear);
+          this.wasmCalculations.__pin(this.mapPtr);
+        }
+      });
       loadWasm().then(module => {
         this.wasmCalculations = module;
         this.wasmCalculations.setSize(this.screenWidth, this.screenHeight);
         const mapDataLinear = this.mapData.flat();
-        const mapPtr = this.wasmCalculations.setMapData(this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear));
-        this.wasmCalculations.__pin(mapPtr);
+        this.mapPtr = this.wasmCalculations.setMapData(this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear));
+        this.wasmCalculations.__pin(this.mapPtr);
         const grassPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.GRASS).data);
         this.wasmCalculations.__pin(grassPtr);
         const pathPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.PATH).data);

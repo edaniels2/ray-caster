@@ -47,8 +47,9 @@ export function setSize(width: u32, height: u32): void {
   halfHeight = screenHeight / 2;
 }
 
-export function setMapData(data: Uint8ClampedArray): void {
+export function setMapData(data: Uint8ClampedArray): Uint8ClampedArray {
   mapData = data;
+  return mapData;
 }
 
 export function setImageBuffer(buffer: Uint8ClampedArray): void {

@@ -1,7 +1,7 @@
 (module
- (type $i32_=>_none (func (param i32)))
  (type $f64_=>_f64 (func (param f64) (result f64)))
  (type $none_=>_none (func))
+ (type $i32_=>_none (func (param i32)))
  (type $i32_i32_=>_none (func (param i32 i32)))
  (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
  (type $i32_i32_i32_=>_none (func (param i32 i32 i32)))
@@ -7013,7 +7013,7 @@
   global.set $~lib/memory/__stack_pointer
   local.get $0
  )
- (func $export:assembly/index/setMapData (param $0 i32)
+ (func $export:assembly/index/setMapData (param $0 i32) (result i32)
   (local $1 i32)
   global.get $~lib/memory/__stack_pointer
   i32.const 4
@@ -7034,12 +7034,13 @@
   local.tee $1
   local.get $0
   i32.store
-  local.get $0
-  global.set $assembly/index/mapData
   local.get $1
   i32.const 4
   i32.add
   global.set $~lib/memory/__stack_pointer
+  local.get $0
+  global.set $assembly/index/mapData
+  global.get $assembly/index/mapData
  )
  (func $export:assembly/index/setImageBuffer (param $0 i32)
   (local $1 i32)
