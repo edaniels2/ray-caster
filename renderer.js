@@ -1,8 +1,7 @@
 import { Camera } from './camera.js';
 import { Input } from './input.js';
 import { Minimap } from './minimap.js';
-import { RayCaster, normalizeAngle } from './ray-caster.js';
-import { TextureLoader } from './texture-loader.js';
+import { RayCaster } from './ray-caster.js';
 import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
 
 /**
@@ -11,6 +10,7 @@ import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, 
 export class Renderer {
   mapChanged = true;
   prevTimestamp = 0;
+  wasmModule = null;
 
   constructor(
     mainCanvas,
@@ -36,9 +36,8 @@ export class Renderer {
     this.minimap.init();
     this.minimap.listenForChanges(() => this.mapChanged = true);
     Input.init(this.camera);
-    TextureLoader.loadTextures().then(textures => {
-      /** @type {RayCaster} */
-      this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap, textures);
+    this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap);
+    this.rayCaster.init().then(() => {
       setInterval(() => requestAnimationFrame(this.update.bind(this)), 1000 / FRAME_RATE);
     });
   }
@@ -75,12 +74,12 @@ export class Renderer {
     }
     if (this.camera.turningLeft) {
       this.camera.t += this.deltaT * turnSpeed;
-      this.camera.t = normalizeAngle(this.camera.t);
+      this.camera.t = this.rayCaster.wasmCalculations.normalizeAngle(this.camera.t);
       positionChanged = true;
     }
     if (this.camera.turningRight) {
       this.camera.t -= this.deltaT * turnSpeed;
-      this.camera.t = normalizeAngle(this.camera.t);
+      this.camera.t = this.rayCaster.wasmCalculations.normalizeAngle(this.camera.t);
       positionChanged = true;
     }
     if (this.camera.jumpCounter > 0) {
@@ -100,7 +99,7 @@ export class Renderer {
   }
 
   loadMap(mapString) {
-    const mapData = [], camera = {x: 0, y: 0, t: Math.PI / 2};
+    const mapData = [], camera = {x: 0, y: 0, t: 3 * Math.PI / 2};
     for (let i = 0; i < this.mapSizeY; i++) {
       /** @type {number[]} */
       let row = [];

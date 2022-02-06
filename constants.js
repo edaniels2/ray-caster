@@ -1,10 +1,10 @@
-export const FRAME_RATE = 45;
+export const FRAME_RATE = 60;
 export const FOV = Math.PI / 3; // 60 degrees
 export const BLOCK_SIZE = 64;
 export const MINIMAP_TILE_SIZE = 10;
 export const MOVE_SPEED = 20;
 export const REALLY_FAR = 100000;
-export const SLIVER_SIZE = 1;
+export const SLIVER_SIZE = 1; // todo: factor this out, it's no longer editable
 export const TURN_SPEED = 30;
 export const Q1_BOUND = Math.PI / 2;
 export const Q2_BOUND = Math.PI;
@@ -33,7 +33,7 @@ export const IMAGE_SOURCES = {
 };
 
 export const MAP =  '##############################' +
-                    '#                            #' +
+                    '#.                           #' +
                     '#                            #' +
                     '#                            #' +
                     '#            #__#            #' +
@@ -59,6 +59,6 @@ export const MAP =  '##############################' +
                     '#            #__#            #' +
                     '#            #__#            #' +
                     '#                            #' +
-                    '#             .              #' +
+                    '#                            #' +
                     '#                            #' +
                     '##############################';
