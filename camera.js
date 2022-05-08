@@ -3,7 +3,7 @@
  */
 export class Camera {
   altitude = 0;
-  jumpCounter = 0;
+  jumpTime = 0;
   movingFwd = false;
   movingBack = false;
   turningLeft = false;

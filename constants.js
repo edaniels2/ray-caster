@@ -1,6 +1,6 @@
-export const FRAME_RATE = 60;
-export const FOV = Math.PI / 3; // 60 degrees
 export const BLOCK_SIZE = 64;
+export const FOV = Math.PI / 3; // 60 degrees
+export const JUMP_TIME = 0.8; // in seconds
 export const MINIMAP_TILE_SIZE = 10;
 export const MOVE_SPEED = 20;
 export const REALLY_FAR = 100000;

@@ -2,7 +2,7 @@ import { Camera } from './camera.js';
 import { Input } from './input.js';
 import { Minimap } from './minimap.js';
 import { RayCaster } from './ray-caster.js';
-import { BLOCK_SIZE, MAP, FOV, FRAME_RATE, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
+import { BLOCK_SIZE, MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
 
 /**
  * Main entry point to the render engine. Responsible for initial setup and scheduling frame updates
@@ -37,9 +37,7 @@ export class Renderer {
     this.minimap.listenForChanges(() => this.mapChanged = true);
     Input.init(this.camera);
     this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap);
-    this.rayCaster.init().then(() => {
-      setInterval(() => requestAnimationFrame(this.update.bind(this)), 1000 / FRAME_RATE);
-    });
+    this.rayCaster.init().then(() => requestAnimationFrame(this.update.bind(this)));
   }
 
   update(/** @type {DOMHighResTimeStamp} */timestamp) {
@@ -47,6 +45,8 @@ export class Renderer {
       this.prevTimestamp = timestamp;
       return;
     }
+    const secondsElapsed = (timestamp - this.prevTimestamp) * .001;
+    const FRAME_RATE = 1 / secondsElapsed;
     const moveSpeed = MOVE_SPEED * 24 / FRAME_RATE;
     const turnSpeed = TURN_SPEED * 24 / FRAME_RATE;
     let positionChanged = false;
@@ -82,12 +82,12 @@ export class Renderer {
       this.camera.t = this.rayCaster.wasmCalculations.normalizeAngle(this.camera.t);
       positionChanged = true;
     }
-    if (this.camera.jumpCounter > 0) {
+    if (this.camera.jumpTime > 0) {
       // this curve was initially set to 'land' in 24 frames, generalized to any frame rate
-      const x = (FRAME_RATE - this.camera.jumpCounter) * 24 / FRAME_RATE;
+      const x = this.camera.jumpTime * 24;
       // got this from a polynomial regression, creates a little push-off/landing bounce in the jump
       this.camera.altitude = 0.0018 * Math.pow(x, 4) - 0.0861 * Math.pow(x, 3) + 1.1798 * Math.pow(x, 2) - 3.5297 * x;
-      this.camera.jumpCounter--;
+      this.camera.jumpTime -= secondsElapsed;
       positionChanged = true;
     }
     if (positionChanged || this.mapChanged) {
@@ -96,6 +96,7 @@ export class Renderer {
       this.mapChanged = false;
     }
     this.prevTimestamp = timestamp;
+    requestAnimationFrame(this.update.bind(this));
   }
 
   loadMap(mapString) {

@@ -1,4 +1,4 @@
-import { FRAME_RATE } from './constants.js';
+import { JUMP_TIME } from './constants.js';
 
 /**
  * Handle user input.
@@ -25,8 +25,8 @@ export class Input {
           this.movingBack = keyDown;
           break;
         case ' ':
-          if (!this.jumpCounter) {
-            this.jumpCounter = FRAME_RATE;
+          if (this.jumpTime <= 0) {
+            this.jumpTime = JUMP_TIME;
           }
       }
     }
