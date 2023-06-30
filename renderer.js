@@ -2,7 +2,7 @@ import { Camera } from './camera.js';
 import { Input } from './input.js';
 import { Minimap } from './minimap.js';
 import { RayCaster } from './ray-caster.js';
-import { BLOCK_SIZE, MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
+import { BLOCK_SIZE, MAP, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
 
 /**
  * Main entry point to the render engine. Responsible for initial setup and scheduling frame updates
@@ -15,9 +15,14 @@ export class Renderer {
   constructor(
     mainCanvas,
     minimapCanvas,
-    initialMap = MAP,
-    mapSizeX = 30,
-    mapSizeY = 30
+    initialMap = LARGE_MAP,
+    mapSizeX = 60,
+    mapSizeY = 60,
+    miniMapSizeX = 30,
+    miniMapSizeY = 30,
+    // initialMap = MAP,
+    // mapSizeX = 30,
+    // mapSizeY = 30
   ) {
     this.mainCanvas = mainCanvas;
     /** @type {number} */this.mapSizeX = mapSizeX;
@@ -29,14 +34,14 @@ export class Renderer {
     /** @type {number} */this.deltaT = FOV / this.numSlivers;
     /** @type {number[][]} */this.mapData = mapData;
     /** @type {Camera} */this.camera = new Camera(camera);
-    /** @type {Minimap} */this.minimap = new Minimap(this.camera, minimapCanvas, mapSizeX, mapSizeY, mapData);
+    /** @type {Minimap} */this.minimap = new Minimap(this.camera, minimapCanvas, miniMapSizeX, miniMapSizeY, mapData);
   }
 
   start() {
     this.minimap.init();
     this.minimap.listenForChanges(() => this.mapChanged = true);
     Input.init(this.camera);
-    this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap);
+    this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap, this.mapSizeX, this.mapSizeY);
     this.rayCaster.init().then(() => requestAnimationFrame(this.update.bind(this)));
   }
 
@@ -93,6 +98,7 @@ export class Renderer {
     if (positionChanged || this.mapChanged) {
       this.minimap.drawMiniMap(this.mapData, this.camera);
       this.rayCaster.cast();
+      this.minimap.updateOffset();
       this.mapChanged = false;
     }
     this.prevTimestamp = timestamp;

@@ -1,35 +1,42 @@
 import { Camera } from './camera.js';
-import { BLOCK_SIZE, MINIMAP_TILE_SIZE, Q1_BOUND, Q2_BOUND, Q3_BOUND, TILE_TYPES } from './constants.js';
+import { BLOCK_SIZE, MINIMAP_TILE_SIZE, TILE_TYPES } from './constants.js';
 
 /**
  * Draws the minimap given current camera condition. Also handles the map editor functionality.
  */
 export class Minimap {
-  constructor(camera, canvas, mapSizeX, mapSizeY, mapData) {
+  mapOffsetX = 0; // next step, make this a pixel offset instead of blocks
+  mapOffsetY = 0;
+
+  constructor(camera, canvas, miniMapSizeX, miniMapSizeY, mapData) {
     /** @type {Camera} */ this.camera = camera;
     /** @type {HTMLCanvasElement} */ this.canvas = canvas;
     /** @type {CanvasRenderingContext2D} */ this.ctx = canvas.getContext('2d');
-    /** @type {number} */ this.mapSizeX = mapSizeX;
-    /** @type {number} */ this.mapSizeY = mapSizeY;
+    /** @type {number} */ this.miniMapSizeX = miniMapSizeX;
+    /** @type {number} */ this.miniMapSizeY = miniMapSizeY;
     /** @type {number[][]} */ this.mapData = mapData;
+    /** @type {number} */ this.totalMapSizeX = this.mapData.length;
+    /** @type {number} */ this.totalMapSizeY = this.mapData[0].length;
   }
 
   init() {
-    this.canvas.style.width = this.mapSizeX * MINIMAP_TILE_SIZE + 'px';
-    this.canvas.style.height = this.mapSizeY * MINIMAP_TILE_SIZE + 'px';
-    this.canvas.width = this.mapSizeX * MINIMAP_TILE_SIZE;
-    this.canvas.height = this.mapSizeY * MINIMAP_TILE_SIZE;
+    this.canvas.style.width = this.miniMapSizeX * MINIMAP_TILE_SIZE + 'px';
+    this.canvas.style.height = this.miniMapSizeY * MINIMAP_TILE_SIZE + 'px';
+    this.canvas.width = this.miniMapSizeX * MINIMAP_TILE_SIZE;
+    this.canvas.height = this.miniMapSizeY * MINIMAP_TILE_SIZE;
     this.canvas.addEventListener('pointerdown', this.editMap.bind(this));
     this.canvas.addEventListener('pointerup', this.endEditMap.bind(this));
+    this.initialOffset();
     this.drawMiniMap();
   }
   
   drawMiniMap() {
-    const xPos = this.camera.x / BLOCK_SIZE * MINIMAP_TILE_SIZE;
-    const yPos = this.camera.y / BLOCK_SIZE * MINIMAP_TILE_SIZE;
-    const totalX = this.mapSizeX * MINIMAP_TILE_SIZE;
-    const totalY = this.mapSizeY * MINIMAP_TILE_SIZE
+    const xPos = (this.camera.x / BLOCK_SIZE - this.mapOffsetX) * MINIMAP_TILE_SIZE;
+    const yPos = (this.camera.y / BLOCK_SIZE - this.mapOffsetY) * MINIMAP_TILE_SIZE;
+    const totalX = this.miniMapSizeX * MINIMAP_TILE_SIZE;
+    const totalY = this.miniMapSizeY * MINIMAP_TILE_SIZE
     let pathString = '';
+    // draw the grid
     for (let i = MINIMAP_TILE_SIZE; i < totalY; i += MINIMAP_TILE_SIZE) {
       pathString += `M ${i} 0 l 0 ${totalY} `;
     }
@@ -40,9 +47,12 @@ export class Minimap {
     this.ctx.beginPath();
     this.ctx.strokeStyle = '#b0c0b0';
     this.ctx.stroke(new Path2D(pathString));
-    for (let i = 0; i < this.mapSizeY; i++) {
-      for (let j = 0; j < this.mapSizeX; j++) {
-        if (this.mapData[i][j] === TILE_TYPES.WALL) {
+    // fill in walls
+    for (let i = 0; i < this.miniMapSizeY; i++) {
+      const yOffset = i + this.mapOffsetY;
+      for (let j = 0; j < this.miniMapSizeX; j++) {
+        const xOffset = j + this.mapOffsetX;
+        if (this.mapData?.[yOffset]?.[xOffset] === TILE_TYPES.WALL) {
           this.ctx.fillStyle = '#000000';
           this.ctx.fillRect(
             j * MINIMAP_TILE_SIZE,
@@ -53,32 +63,20 @@ export class Minimap {
         }
       }
     }
+    // position marker
     this.ctx.fillStyle = '#ff0000';
     this.ctx.arc(xPos, yPos, 2, 0, Math.PI * 2);
     this.ctx.fill();
   }
 
   miniMapRay(/** @type {number} */alpha) {
-    const xPos = this.camera.x / BLOCK_SIZE * MINIMAP_TILE_SIZE;
-    const yPos = this.camera.y / BLOCK_SIZE * MINIMAP_TILE_SIZE;
+    const xPos = (this.camera.x / BLOCK_SIZE - this.mapOffsetX) * MINIMAP_TILE_SIZE;
+    const yPos = (this.camera.y / BLOCK_SIZE - this.mapOffsetY) * MINIMAP_TILE_SIZE;
     const rayLength = MINIMAP_TILE_SIZE * 10;
-    let xEnd, yEnd;
-    if (alpha < Q1_BOUND) {
-      xEnd = xPos + Math.cos(alpha) * rayLength;
-      yEnd = yPos - Math.sin(alpha) * rayLength;
-    } else if (alpha < Q2_BOUND) {
-      alpha -= Q1_BOUND;
-      xEnd = xPos - Math.sin(alpha) * rayLength;
-      yEnd = yPos - Math.cos(alpha) * rayLength;
-    } else if (alpha < Q3_BOUND) {
-      alpha -= Q2_BOUND;
-      xEnd = xPos - Math.cos(alpha) * rayLength;
-      yEnd = yPos + Math.sin(alpha) * rayLength;
-    } else {
-      alpha -= Q3_BOUND;
-      xEnd = xPos + Math.sin(alpha) * rayLength;
-      yEnd = yPos + Math.cos(alpha) * rayLength;
-    }
+    const cosTerm = Math.cos(alpha) * rayLength;
+    const sinTerm = Math.sin(alpha) * rayLength;
+    const xEnd = xPos + cosTerm;
+    const yEnd = yPos - sinTerm;
     this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.03)';
     this.ctx.beginPath();
     this.ctx.moveTo(xPos, yPos);
@@ -88,29 +86,55 @@ export class Minimap {
     return true;
   }
 
+  updateOffset() {
+    const mapBlockX = this.camera.x / BLOCK_SIZE - this.mapOffsetX;
+    const mapBlockY = this.camera.y / BLOCK_SIZE - this.mapOffsetY;
+    const mapHalfSizeX = this.miniMapSizeX / 2;
+    const mapHalfSizeY = this.miniMapSizeY / 2;
+    if (mapBlockX > (mapHalfSizeX + 5)) {
+      this.mapOffsetX++;
+    }
+    if (mapBlockX < (mapHalfSizeX - 5)) {
+      this.mapOffsetX--;
+    }
+    if (mapBlockY > (mapHalfSizeY + 5)) {
+      this.mapOffsetY++;
+    }
+    if (mapBlockY < (mapHalfSizeY - 5)) {
+      this.mapOffsetY--;
+    }
+  }
+
+  initialOffset() {
+    this.mapOffsetX = Math.floor(this.camera.x / BLOCK_SIZE) - this.miniMapSizeX / 2;
+    this.mapOffsetY = Math.floor(this.camera.y / BLOCK_SIZE) - this.miniMapSizeY / 2;
+  }
+
   listenForChanges(fn) {
     this.canvas.addEventListener('mapChanged', fn);
   }
 
   editMap(/** @type {PointerEvent} */mouse) {
     const { x, y } = this.getCanvasCoords(mouse, this.canvas);
-    const gridX = Math.floor(x / MINIMAP_TILE_SIZE);
-    const gridY = Math.floor(y / MINIMAP_TILE_SIZE);
+    const gridX = Math.floor(x / MINIMAP_TILE_SIZE) + this.mapOffsetX;
+    const gridY = Math.floor(y / MINIMAP_TILE_SIZE) + this.mapOffsetY;
     const removing = this.mapData[gridY][gridX] === TILE_TYPES.WALL;
     toggleTile.call(this, mouse);
     this.canvas.onpointermove = toggleTile.bind(this);
 
     function toggleTile(event) {
       const { x, y } = this.getCanvasCoords(event, this.canvas);
-      const gridX = Math.floor(x / MINIMAP_TILE_SIZE);
-      const gridY = Math.floor(y / MINIMAP_TILE_SIZE);
+      const mapTileX = Math.floor(x / MINIMAP_TILE_SIZE);
+      const worldTileX = mapTileX + this.mapOffsetX;
+      const mapTileY = Math.floor(y / MINIMAP_TILE_SIZE);
+      const worldTileY = mapTileY + this.mapOffsetY;
       if (removing) {
-        this.mapData[gridY][gridX] = TILE_TYPES.GRASS;
-        this.ctx.clearRect(gridX * MINIMAP_TILE_SIZE + 1, gridY * MINIMAP_TILE_SIZE + 1, MINIMAP_TILE_SIZE - 2, MINIMAP_TILE_SIZE - 2);
+        this.mapData[worldTileY][worldTileX] = TILE_TYPES.GRASS;
+        this.ctx.clearRect(mapTileX * MINIMAP_TILE_SIZE + 1, mapTileY * MINIMAP_TILE_SIZE + 1, MINIMAP_TILE_SIZE - 2, MINIMAP_TILE_SIZE - 2);
       } else {
-        this.mapData[gridY][gridX] = TILE_TYPES.WALL;
+        this.mapData[worldTileY][worldTileX] = TILE_TYPES.WALL;
         this.ctx.fillStyle = '#000000';
-        this.ctx.fillRect(gridX * MINIMAP_TILE_SIZE, gridY * MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
+        this.ctx.fillRect(mapTileX * MINIMAP_TILE_SIZE, mapTileY * MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
       }
     }
   }

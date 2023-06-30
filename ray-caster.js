@@ -18,7 +18,7 @@ export class RayCaster {
   /** @type {number} */wallSlice = null;
   wasmCalculations = null;
 
-  constructor(camera, distToPlane, mapData, canvas, numSlivers, deltaT, minimap) {
+  constructor(camera, distToPlane, mapData, canvas, numSlivers, deltaT, minimap, mapSizeX, mapSizeY) {
     /** @type {Minimap} */this.minimap = minimap;
     /** @type {Camera} */this.camera = camera;
     /** @type {number} */this.distToPlane = distToPlane;
@@ -30,6 +30,8 @@ export class RayCaster {
     /** @type {number} */this.screenWidth = canvas.width;
     /** @type {number} */this.halfHeight = canvas.height / 2;
     /** @type {ImageData} */this.imageBuffer = new ImageData(this.screenWidth, this.screenHeight);
+    /** @type {number} */this.mapSizeX = mapSizeX;
+    /** @type {number} */this.mapSizeY = mapSizeY;
   }
 
   init() {
@@ -41,7 +43,7 @@ export class RayCaster {
           const mapDataLinear = this.mapData.flat();
           this.wasmCalculations.__unpin(this.mapPtr);
           this.mapPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear);
-          this.wasmCalculations.setMapData(this.mapPtr, mapDataLinear);
+          this.wasmCalculations.setMapData(this.mapPtr, this.mapSizeX, this.mapSizeY);
           this.wasmCalculations.__pin(this.mapPtr);
         }
       });
@@ -49,7 +51,7 @@ export class RayCaster {
         this.wasmCalculations = module;
         this.wasmCalculations.setSize(this.screenWidth, this.screenHeight);
         const mapDataLinear = this.mapData.flat();
-        this.mapPtr = this.wasmCalculations.setMapData(this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear));
+        this.mapPtr = this.wasmCalculations.setMapData(this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear), this.mapSizeX, this.mapSizeY);
         this.wasmCalculations.__pin(this.mapPtr);
         const grassPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.GRASS).data);
         this.wasmCalculations.__pin(grassPtr);

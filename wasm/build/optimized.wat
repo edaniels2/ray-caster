@@ -12,6 +12,7 @@
  (type $i64_=>_i32 (func (param i64) (result i32)))
  (type $i32_i32_=>_f64 (func (param i32 i32) (result f64)))
  (type $f64_f64_f64_f64_f64_=>_f64 (func (param f64 f64 f64 f64 f64) (result f64)))
+ (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
  (global $~lib/rt/itcms/total (mut i32) (i32.const 0))
  (global $~lib/rt/itcms/threshold (mut i32) (i32.const 0))
@@ -37,6 +38,8 @@
  (global $assembly/index/textures (mut i32) (i32.const 0))
  (global $assembly/index/sprites (mut i32) (i32.const 0))
  (global $assembly/index/mapData (mut i32) (i32.const 0))
+ (global $assembly/index/mapSizeX (mut i32) (i32.const 0))
+ (global $assembly/index/mapSizeY (mut i32) (i32.const 0))
  (global $assembly/index/wallDistances (mut i32) (i32.const 0))
  (global $assembly/index/beta (mut f64) (f64.const 0))
  (global $assembly/index/theta (mut f64) (f64.const 0))
@@ -5110,9 +5113,10 @@
    local.tee $3
    f64.const 0
    f64.lt
+   global.get $assembly/index/mapSizeX
+   f64.convert_i32_s
    local.get $3
-   f64.const 30
-   f64.ge
+   f64.le
    i32.or
    local.get $0
    f64.load offset=16
@@ -5123,9 +5127,10 @@
    f64.const 0
    f64.lt
    i32.or
+   global.get $assembly/index/mapSizeY
+   f64.convert_i32_s
    local.get $7
-   f64.const 30
-   f64.ge
+   f64.le
    i32.or
    if
     i32.const 1
@@ -5137,7 +5142,8 @@
     i32.store
     local.get $2
     local.get $7
-    f64.const 30
+    global.get $assembly/index/mapSizeX
+    f64.convert_i32_s
     f64.mul
     local.get $3
     f64.add
@@ -5193,9 +5199,10 @@
      local.tee $3
      f64.const 0
      f64.lt
+     global.get $assembly/index/mapSizeX
+     f64.convert_i32_s
      local.get $3
-     f64.const 30
-     f64.ge
+     f64.le
      i32.or
      local.get $0
      f64.load offset=16
@@ -5206,9 +5213,10 @@
      f64.const 0
      f64.lt
      i32.or
+     global.get $assembly/index/mapSizeY
+     f64.convert_i32_s
      local.get $7
-     f64.const 30
-     f64.ge
+     f64.le
      i32.or
      if
       i32.const 1
@@ -5220,7 +5228,8 @@
       i32.store
       local.get $6
       local.get $7
-      f64.const 30
+      global.get $assembly/index/mapSizeX
+      f64.convert_i32_s
       f64.mul
       f64.trunc
       local.get $3
@@ -5475,33 +5484,6 @@
     f64.convert_i32_u
     f64.gt
     if
-     global.get $assembly/index/camera
-     local.tee $5
-     f64.load
-     local.get $15
-     global.get $assembly/index/distToPlane
-     f64.const 32
-     local.get $5
-     f64.load offset=24
-     f64.sub
-     f64.mul
-     global.get $assembly/index/halfHeight
-     local.get $7
-     i32.sub
-     local.tee $13
-     i32.const 1
-     local.get $13
-     select
-     f64.convert_i32_u
-     f64.div
-     local.get $14
-     f64.div
-     f64.mul
-     f64.add
-     drop
-     local.get $5
-     f64.load offset=8
-     drop
      global.get $~lib/memory/__stack_pointer
      global.get $assembly/index/imageBuffer
      local.tee $5
@@ -5727,13 +5709,15 @@
        f64.const 0
        f64.lt
        i32.or
+       global.get $assembly/index/mapSizeX
+       f64.convert_i32_s
        local.get $18
-       f64.const 30
-       f64.ge
+       f64.le
        i32.or
+       global.get $assembly/index/mapSizeY
+       f64.convert_i32_s
        local.get $12
-       f64.const 30
-       f64.ge
+       f64.le
        i32.or
        br_if $for-continue|0
        global.get $~lib/memory/__stack_pointer
@@ -5742,7 +5726,8 @@
        i32.store
        local.get $5
        local.get $12
-       f64.const 30
+       global.get $assembly/index/mapSizeX
+       f64.convert_i32_s
        f64.mul
        local.get $18
        f64.add
@@ -7013,8 +6998,8 @@
   global.set $~lib/memory/__stack_pointer
   local.get $0
  )
- (func $export:assembly/index/setMapData (param $0 i32) (result i32)
-  (local $1 i32)
+ (func $export:assembly/index/setMapData (param $0 i32) (param $1 i32) (param $2 i32) (result i32)
+  (local $3 i32)
   global.get $~lib/memory/__stack_pointer
   i32.const 4
   i32.sub
@@ -7031,15 +7016,21 @@
    unreachable
   end
   global.get $~lib/memory/__stack_pointer
-  local.tee $1
+  local.tee $3
   local.get $0
   i32.store
-  local.get $1
+  local.get $3
   i32.const 4
   i32.add
   global.set $~lib/memory/__stack_pointer
   local.get $0
   global.set $assembly/index/mapData
+  local.get $1
+  i32.extend16_s
+  global.set $assembly/index/mapSizeX
+  local.get $2
+  i32.extend16_s
+  global.set $assembly/index/mapSizeY
   global.get $assembly/index/mapData
  )
  (func $export:assembly/index/setImageBuffer (param $0 i32)
