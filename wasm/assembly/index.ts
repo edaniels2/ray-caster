@@ -12,6 +12,7 @@ const Q4_BOUND: f64 = 2 * Math.PI;
 const TILE_TYPES: TileTypes = {
   GRASS: 1,
   PATH: 2,
+  WATER: 4,
   // CEILING: 4,
   WALL: 8,
 };
@@ -165,14 +166,15 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
   return theta;
 }
 
-export function drawSprite(): void {
+export function drawSprite(mapX: f64, mapY: f64): void {
   // wip - draw a tree in the middle of the map
   // once there are multiple sprites on screen they'll need to be sorted by distance far to near
   const sprite: Uint8ClampedArray = sprites.get(SPRITES.TREE);
-  const spritePosition: f64 = BLOCK_SIZE * 15; // wip only - get the position from some configuration mapping
-  const spriteDist: f64 = getDistance(camera.x, camera.y, spritePosition, spritePosition) - /* sprite.width */BLOCK_SIZE / 2;
-  const spriteMapX: f64 = spritePosition - camera.x;
-  const spriteMapY: f64 = spritePosition - camera.y;
+  const spritePositionX: f64 = BLOCK_SIZE * mapX;
+  const spritePositionY: f64 = BLOCK_SIZE * mapY;
+  const spriteDist: f64 = getDistance(camera.x, camera.y, spritePositionX, spritePositionY) - /* sprite.width */BLOCK_SIZE / 2;
+  const spriteMapX: f64 = spritePositionX - camera.x;
+  const spriteMapY: f64 = spritePositionY - camera.y;
   let gamma: f64 = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
   gamma = normalizeAngle(camera.t + FOV / 2 - gamma);
   let spriteScreenX: i64 = <i64>Math.round(gamma * screenWidth / FOV);
@@ -405,6 +407,7 @@ class Camera {
 class TileTypes {
   GRASS: u8;
   PATH: u8;
+  WATER: u8;
   WALL: u8;
 }
 
