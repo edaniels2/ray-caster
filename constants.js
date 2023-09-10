@@ -15,8 +15,8 @@ export const TILE_TYPES = { // probably expand this to allow different textures 
   GRASS: 1,
   PATH: 2,
   // CEILING: 4,
-  WALL: 8,
   WATER: [4, 5, 6, 7],
+  WALL: 8,
 }
 export const SPRITES = {
   TREE: 0,

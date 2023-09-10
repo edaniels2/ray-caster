@@ -5,8 +5,10 @@ import { BLOCK_SIZE, MINIMAP_TILE_SIZE, TILE_TYPES } from './constants.js';
  * Draws the minimap given current camera condition. Also handles the map editor functionality.
  */
 export class Minimap {
-  mapOffsetX = 0; // next step, make this a pixel offset instead of blocks
+  mapOffsetX = 0;
   mapOffsetY = 0;
+  translateX = 0;
+  translateY = 0;
 
   constructor(camera, canvas, miniMapSizeX, miniMapSizeY, mapData) {
     /** @type {Camera} */ this.camera = camera;
@@ -17,6 +19,9 @@ export class Minimap {
     /** @type {number[][]} */ this.mapData = mapData;
     /** @type {number} */ this.totalMapSizeX = this.mapData.length;
     /** @type {number} */ this.totalMapSizeY = this.mapData[0].length;
+    this.totalX = (this.miniMapSizeX + 3) * MINIMAP_TILE_SIZE;
+    this.totalY = (this.miniMapSizeY + 3) * MINIMAP_TILE_SIZE;
+    this.overscanOrigin = -2 * MINIMAP_TILE_SIZE;
   }
 
   init() {
@@ -29,38 +34,45 @@ export class Minimap {
     this.initialOffset();
     this.drawMiniMap();
   }
-  
+
   drawMiniMap() {
+    this.ctx.clearRect(this.overscanOrigin, this.overscanOrigin, this.totalX, this.totalY);
+    this.ctx.setTransform(1, 0, 0, 1, this.translateX, this.translateY);
     const xPos = (this.camera.x / BLOCK_SIZE - this.mapOffsetX) * MINIMAP_TILE_SIZE;
     const yPos = (this.camera.y / BLOCK_SIZE - this.mapOffsetY) * MINIMAP_TILE_SIZE;
-    const totalX = this.miniMapSizeX * MINIMAP_TILE_SIZE;
-    const totalY = this.miniMapSizeY * MINIMAP_TILE_SIZE
     let pathString = '';
     // draw the grid
-    for (let i = MINIMAP_TILE_SIZE; i < totalY; i += MINIMAP_TILE_SIZE) {
-      pathString += `M ${i} 0 l 0 ${totalY} `;
+    for (let i = this.overscanOrigin; i < this.totalY; i += MINIMAP_TILE_SIZE) {
+      pathString += `M ${i} ${this.overscanOrigin} v ${this.totalY} `;
     }
-    for (let i = MINIMAP_TILE_SIZE; i < totalX; i += MINIMAP_TILE_SIZE) {
-      pathString += `M 0 ${i} l ${totalX} 0 `;
+    for (let i = this.overscanOrigin; i < this.totalX; i += MINIMAP_TILE_SIZE) {
+      pathString += `M ${this.overscanOrigin} ${i} h ${this.totalX} `;
     }
-    this.ctx.clearRect(0, 0, totalX, totalY);
     this.ctx.beginPath();
     this.ctx.strokeStyle = '#b0c0b0';
     this.ctx.stroke(new Path2D(pathString));
-    // fill in walls
-    for (let i = 0; i < this.miniMapSizeY; i++) {
+    // fill in walls, water, whatever else seems good to put on the map
+    for (let i = this.overscanOrigin; i < this.miniMapSizeY + 2; i++) {
       const yOffset = i + this.mapOffsetY;
-      for (let j = 0; j < this.miniMapSizeX; j++) {
+      for (let j = this.overscanOrigin; j < this.miniMapSizeX + 2; j++) {
         const xOffset = j + this.mapOffsetX;
-        if (this.mapData?.[yOffset]?.[xOffset] === TILE_TYPES.WALL) {
-          this.ctx.fillStyle = '#000000';
-          this.ctx.fillRect(
-            j * MINIMAP_TILE_SIZE,
-            i * MINIMAP_TILE_SIZE,
-            MINIMAP_TILE_SIZE,
-            MINIMAP_TILE_SIZE
-          );
+        let fillSquare = true;
+        switch (this.mapData?.[yOffset]?.[xOffset]) {
+          case TILE_TYPES.WALL:
+            this.ctx.fillStyle = '#000000';
+            break;
+          case TILE_TYPES.WATER:
+            this.ctx.fillStyle = '#07f';
+            break;
+          default:
+            fillSquare = false;
         }
+        fillSquare && this.ctx.fillRect(
+          j * MINIMAP_TILE_SIZE,
+          i * MINIMAP_TILE_SIZE,
+          MINIMAP_TILE_SIZE,
+          MINIMAP_TILE_SIZE
+        );
       }
     }
     // position marker
@@ -93,15 +105,27 @@ export class Minimap {
     const mapHalfSizeY = this.miniMapSizeY / 2;
     if (mapBlockX > (mapHalfSizeX + 5)) {
       this.mapOffsetX++;
+      this.translateX = 0;
+    } else if (mapBlockX > (mapHalfSizeX + 4)) {
+      this.translateX = -1 * Math.floor((mapBlockX - mapHalfSizeX - 4) * MINIMAP_TILE_SIZE);
     }
     if (mapBlockX < (mapHalfSizeX - 5)) {
       this.mapOffsetX--;
+      this.translateX = 10;
+    } else if (mapBlockX < (mapHalfSizeX - 4)) {
+      this.translateX = 10 - Math.floor((mapBlockX - mapHalfSizeX + 4) * MINIMAP_TILE_SIZE);
     }
     if (mapBlockY > (mapHalfSizeY + 5)) {
       this.mapOffsetY++;
+      this.translateY = 0;
+    } else if (mapBlockY > (mapHalfSizeY + 4)) {
+      this.translateY = -1 * Math.floor((mapBlockY - mapHalfSizeY - 4) * MINIMAP_TILE_SIZE);
     }
     if (mapBlockY < (mapHalfSizeY - 5)) {
       this.mapOffsetY--;
+      this.translateY = 10;
+    } else if (mapBlockY < (mapHalfSizeY - 4)) {
+      this.translateY = 10 - Math.floor((mapBlockY - mapHalfSizeY + 4) * MINIMAP_TILE_SIZE);
     }
   }
 
