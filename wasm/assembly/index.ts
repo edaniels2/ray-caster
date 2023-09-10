@@ -12,6 +12,7 @@ const Q4_BOUND: f64 = 2 * Math.PI;
 const TILE_TYPES: TileTypes = {
   GRASS: 1,
   PATH: 2,
+  WATER: 4,
   // CEILING: 4,
   WALL: 8,
 };
@@ -29,6 +30,8 @@ var imageBuffer: Uint8ClampedArray;
 var textures: Map<u8, Uint8ClampedArray> = new Map();
 var sprites: Map<u8, Uint8ClampedArray> = new Map();
 var mapData: Uint8ClampedArray;
+var mapSizeX: i16;
+var mapSizeY: i16;
 var wallDistances: Float64Array = new Float64Array(screenWidth);
 
 // these are updated per frame
@@ -47,8 +50,10 @@ export function setSize(width: u32, height: u32): void {
   halfHeight = screenHeight / 2;
 }
 
-export function setMapData(data: Uint8ClampedArray): Uint8ClampedArray {
+export function setMapData(data: Uint8ClampedArray, sizeX: i16, sizeY: i16): Uint8ClampedArray {
   mapData = data;
+  mapSizeX = sizeX;
+  mapSizeY = sizeY;
   return mapData;
 }
 
@@ -84,14 +89,6 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
   for (let renderY: u32 = 0; renderY < screenHeight; renderY++) {
     const bufferStart = <i64>(renderY * screenWidth + renderX) * 4;
     if (renderY < topOfWall) {
-      const distCoefCeil: f64 = distToPlane * (BLOCK_SIZE / 2 - camera.alt);
-
-      let pixel: u32 = <u32>(trunc(halfHeight) - renderY);
-      pixel = pixel == 0 ? 1 : pixel;
-      const straightDist: f64 = distCoefCeil / pixel;
-      const distToP: f64 = straightDist / cosBeta;
-      const x: f64 = camera.x + cosTheta * distToP;
-      const y: f64 = camera.y - sinTheta * distToP;
       if (true) { // update the mapData to include ceilings (only on specified tiles)
         // rgba values for css 'skyblue'
         imageBuffer[<i32>bufferStart] = 135 + renderY / 2 + 15; // adds a little gradient to the sky
@@ -99,6 +96,13 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
         imageBuffer[<i32>(bufferStart + 2)] = 235;
         imageBuffer[<i32>(bufferStart + 3)] = 255;
       } else {
+        // let pixel: u32 = <u32>(trunc(halfHeight) - renderY);
+        // pixel = pixel == 0 ? 1 : pixel;
+        // const distCoefCeil: f64 = distToPlane * (BLOCK_SIZE / 2 - camera.alt);
+        // const straightDist: f64 = distCoefCeil / pixel;
+        // const distToP: f64 = straightDist / cosBeta;
+        // const x: f64 = camera.x + cosTheta * distToP;
+        // const y: f64 = camera.y - sinTheta * distToP;
         // use this once there are ceiling tiles
         // const tileX = Math.floor(x % BLOCK_SIZE);
         // const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
@@ -138,15 +142,15 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
       const y: f64 = camera.y - sinTheta * distToP;
       const gridX = <f64>Math.floor(x / BLOCK_SIZE);
       const gridY = <f64>Math.floor(y / BLOCK_SIZE);
-      if (gridX < 0 || gridY < 0 || gridX >= 30 || gridY >= 30) {
+      if (gridX < 0 || gridY < 0 || gridX >= mapSizeX || gridY >= mapSizeY) {
         continue;
       }
-      // const mapIndex = <i32>(trunc(gridY) * 30 + trunc(gridX));
+      // const mapIndex = <i32>(trunc(gridY) * mapSizeX + trunc(gridX));
       // if (mapIndex < 0 || mapIndex >= mapData.length) {
       //   // landed outside of map
       //   continue;
       // }
-      const tileType = mapData[<i32>(f64(gridY * 30) + gridX)];
+      const tileType = mapData[<i32>(f64(gridY * mapSizeX) + gridX)];
       const texture = textures.get(<u8>tileType);
       if (!texture) {
         continue;
@@ -162,14 +166,15 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
   return theta;
 }
 
-export function drawSprite(): void {
+export function drawSprite(mapX: f64, mapY: f64): void {
   // wip - draw a tree in the middle of the map
   // once there are multiple sprites on screen they'll need to be sorted by distance far to near
   const sprite: Uint8ClampedArray = sprites.get(SPRITES.TREE);
-  const spritePosition: f64 = BLOCK_SIZE * 15; // wip only - get the position from some configuration mapping
-  const spriteDist: f64 = getDistance(camera.x, camera.y, spritePosition, spritePosition) - /* sprite.width */BLOCK_SIZE / 2;
-  const spriteMapX: f64 = spritePosition - camera.x;
-  const spriteMapY: f64 = spritePosition - camera.y;
+  const spritePositionX: f64 = BLOCK_SIZE * mapX;
+  const spritePositionY: f64 = BLOCK_SIZE * mapY;
+  const spriteDist: f64 = getDistance(camera.x, camera.y, spritePositionX, spritePositionY) - /* sprite.width */BLOCK_SIZE / 2;
+  const spriteMapX: f64 = spritePositionX - camera.x;
+  const spriteMapY: f64 = spritePositionY - camera.y;
   let gamma: f64 = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
   gamma = normalizeAngle(camera.t + FOV / 2 - gamma);
   let spriteScreenX: i64 = <i64>Math.round(gamma * screenWidth / FOV);
@@ -345,9 +350,9 @@ function hitData(data: HitData, intersectVert: bool): HitResult {
   let gridY = <f64>Math.floor(data.y / BLOCK_SIZE);
   let gridX = <f64>Math.floor(data.x / BLOCK_SIZE);
   let slice: u8 = 0;
-  if (gridX < 0 || gridX >= <f64>30 || gridY < 0 || gridY >= <f64>(30)) {
+  if (gridX < 0 || gridX >= <f64>mapSizeX || gridY < 0 || gridY >= <f64>(mapSizeY)) {
     outOfBounds = true;
-  } else if (mapData[<i32>(f64(gridY * 30) + gridX)] == TILE_TYPES.WALL) {
+  } else if (mapData[<i32>(f64(gridY * mapSizeX) + gridX)] == TILE_TYPES.WALL) {
     hit = true;
     if (intersectVert) {
       slice = <u8>(Math.floor(data.x) % BLOCK_SIZE);
@@ -360,9 +365,9 @@ function hitData(data: HitData, intersectVert: bool): HitResult {
     data.y += data.dY;
     gridY = <f64>Math.floor(data.y / <f64>BLOCK_SIZE);
     gridX = <f64>Math.floor(data.x / <f64>BLOCK_SIZE);
-    if (gridX < 0 || gridX >= <f64>30 || gridY < 0 || gridY >= <f64>30) {
+    if (gridX < 0 || gridX >= <f64>mapSizeX || gridY < 0 || gridY >= <f64>mapSizeY) {
       outOfBounds = true;
-    } else if (mapData[<i32>(trunc(gridY * 30) + gridX)] == TILE_TYPES.WALL) {
+    } else if (mapData[<i32>(trunc(gridY * mapSizeX) + gridX)] == TILE_TYPES.WALL) {
       hit = true;
       if (intersectVert) {
         slice = <u8>(Math.floor(data.x) % BLOCK_SIZE);
@@ -402,6 +407,7 @@ class Camera {
 class TileTypes {
   GRASS: u8;
   PATH: u8;
+  WATER: u8;
   WALL: u8;
 }
 

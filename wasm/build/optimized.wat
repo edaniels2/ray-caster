@@ -1,7 +1,7 @@
 (module
  (type $f64_=>_f64 (func (param f64) (result f64)))
- (type $none_=>_none (func))
  (type $i32_=>_none (func (param i32)))
+ (type $none_=>_none (func))
  (type $i32_i32_=>_none (func (param i32 i32)))
  (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
  (type $i32_i32_i32_=>_none (func (param i32 i32 i32)))
@@ -12,6 +12,8 @@
  (type $i64_=>_i32 (func (param i64) (result i32)))
  (type $i32_i32_=>_f64 (func (param i32 i32) (result f64)))
  (type $f64_f64_f64_f64_f64_=>_f64 (func (param f64 f64 f64 f64 f64) (result f64)))
+ (type $f64_f64_=>_none (func (param f64 f64)))
+ (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
  (global $~lib/rt/itcms/total (mut i32) (i32.const 0))
  (global $~lib/rt/itcms/threshold (mut i32) (i32.const 0))
@@ -37,6 +39,8 @@
  (global $assembly/index/textures (mut i32) (i32.const 0))
  (global $assembly/index/sprites (mut i32) (i32.const 0))
  (global $assembly/index/mapData (mut i32) (i32.const 0))
+ (global $assembly/index/mapSizeX (mut i32) (i32.const 0))
+ (global $assembly/index/mapSizeY (mut i32) (i32.const 0))
  (global $assembly/index/wallDistances (mut i32) (i32.const 0))
  (global $assembly/index/beta (mut f64) (f64.const 0))
  (global $assembly/index/theta (mut f64) (f64.const 0))
@@ -2572,7 +2576,7 @@
    i32.const 0
    i32.store
    local.get $1
-   i32.const 3
+   i32.const 4
    i32.const 3
    call $~lib/rt/itcms/__new
    local.tee $1
@@ -2586,6 +2590,9 @@
    local.get $1
    i32.const 0
    i32.store8 offset=2
+   local.get $1
+   i32.const 0
+   i32.store8 offset=3
    global.get $~lib/memory/__stack_pointer
    i32.const 4
    i32.add
@@ -2600,8 +2607,11 @@
    i32.const 2
    i32.store8 offset=1
    local.get $1
-   i32.const 8
+   i32.const 4
    i32.store8 offset=2
+   local.get $1
+   i32.const 8
+   i32.store8 offset=3
    local.get $1
    global.set $assembly/index/TILE_TYPES
    global.get $~lib/memory/__stack_pointer
@@ -5110,9 +5120,10 @@
    local.tee $3
    f64.const 0
    f64.lt
+   global.get $assembly/index/mapSizeX
+   f64.convert_i32_s
    local.get $3
-   f64.const 30
-   f64.ge
+   f64.le
    i32.or
    local.get $0
    f64.load offset=16
@@ -5123,9 +5134,10 @@
    f64.const 0
    f64.lt
    i32.or
+   global.get $assembly/index/mapSizeY
+   f64.convert_i32_s
    local.get $7
-   f64.const 30
-   f64.ge
+   f64.le
    i32.or
    if
     i32.const 1
@@ -5137,14 +5149,15 @@
     i32.store
     local.get $2
     local.get $7
-    f64.const 30
+    global.get $assembly/index/mapSizeX
+    f64.convert_i32_s
     f64.mul
     local.get $3
     f64.add
     i32.trunc_f64_s
     call $~lib/typedarray/Uint8ClampedArray#__get
     global.get $assembly/index/TILE_TYPES
-    i32.load8_u offset=2
+    i32.load8_u offset=3
     i32.eq
     if (result i32)
      i32.const 1
@@ -5193,9 +5206,10 @@
      local.tee $3
      f64.const 0
      f64.lt
+     global.get $assembly/index/mapSizeX
+     f64.convert_i32_s
      local.get $3
-     f64.const 30
-     f64.ge
+     f64.le
      i32.or
      local.get $0
      f64.load offset=16
@@ -5206,9 +5220,10 @@
      f64.const 0
      f64.lt
      i32.or
+     global.get $assembly/index/mapSizeY
+     f64.convert_i32_s
      local.get $7
-     f64.const 30
-     f64.ge
+     f64.le
      i32.or
      if
       i32.const 1
@@ -5220,7 +5235,8 @@
       i32.store
       local.get $6
       local.get $7
-      f64.const 30
+      global.get $assembly/index/mapSizeX
+      f64.convert_i32_s
       f64.mul
       f64.trunc
       local.get $3
@@ -5228,7 +5244,7 @@
       i32.trunc_f64_s
       call $~lib/typedarray/Uint8ClampedArray#__get
       global.get $assembly/index/TILE_TYPES
-      i32.load8_u offset=2
+      i32.load8_u offset=3
       i32.eq
       if
        i32.const 1
@@ -5475,33 +5491,6 @@
     f64.convert_i32_u
     f64.gt
     if
-     global.get $assembly/index/camera
-     local.tee $5
-     f64.load
-     local.get $15
-     global.get $assembly/index/distToPlane
-     f64.const 32
-     local.get $5
-     f64.load offset=24
-     f64.sub
-     f64.mul
-     global.get $assembly/index/halfHeight
-     local.get $7
-     i32.sub
-     local.tee $13
-     i32.const 1
-     local.get $13
-     select
-     f64.convert_i32_u
-     f64.div
-     local.get $14
-     f64.div
-     f64.mul
-     f64.add
-     drop
-     local.get $5
-     f64.load offset=8
-     drop
      global.get $~lib/memory/__stack_pointer
      global.get $assembly/index/imageBuffer
      local.tee $5
@@ -5601,7 +5590,7 @@
        local.get $5
        local.get $13
        global.get $assembly/index/TILE_TYPES
-       i32.load8_u offset=2
+       i32.load8_u offset=3
        call $~lib/map/Map<u8,~lib/typedarray/Uint8ClampedArray>#get
        local.tee $5
        i32.store offset=4
@@ -5727,13 +5716,15 @@
        f64.const 0
        f64.lt
        i32.or
+       global.get $assembly/index/mapSizeX
+       f64.convert_i32_s
        local.get $18
-       f64.const 30
-       f64.ge
+       f64.le
        i32.or
+       global.get $assembly/index/mapSizeY
+       f64.convert_i32_s
        local.get $12
-       f64.const 30
-       f64.ge
+       f64.le
        i32.or
        br_if $for-continue|0
        global.get $~lib/memory/__stack_pointer
@@ -5742,7 +5733,8 @@
        i32.store
        local.get $5
        local.get $12
-       f64.const 30
+       global.get $assembly/index/mapSizeX
+       f64.convert_i32_s
        f64.mul
        local.get $18
        f64.add
@@ -5834,23 +5826,21 @@
   global.set $~lib/memory/__stack_pointer
   global.get $assembly/index/theta
  )
- (func $assembly/index/drawSprite
-  (local $0 i64)
-  (local $1 f64)
-  (local $2 i32)
-  (local $3 i64)
-  (local $4 f64)
+ (func $assembly/index/drawSprite (param $0 f64) (param $1 f64)
+  (local $2 i64)
+  (local $3 i32)
+  (local $4 i64)
   (local $5 i64)
   (local $6 i64)
-  (local $7 f64)
+  (local $7 i64)
   (local $8 i64)
-  (local $9 i64)
-  (local $10 i32)
+  (local $9 i32)
+  (local $10 f64)
   (local $11 f64)
-  (local $12 i32)
+  (local $12 f64)
   (local $13 i32)
   (local $14 i32)
-  (local $15 f64)
+  (local $15 i32)
   (local $16 f64)
   (local $17 f64)
   global.get $~lib/memory/__stack_pointer
@@ -5869,109 +5859,115 @@
    unreachable
   end
   global.get $~lib/memory/__stack_pointer
-  local.tee $2
+  local.tee $3
   i64.const 0
   i64.store
-  local.get $2
+  local.get $3
   global.get $assembly/index/sprites
-  local.tee $10
+  local.tee $9
   i32.store
-  local.get $2
-  local.get $10
+  local.get $3
+  local.get $9
   global.get $assembly/index/SPRITES
   i32.load8_u
   call $~lib/map/Map<u8,~lib/typedarray/Uint8ClampedArray>#get
-  local.tee $10
+  local.tee $9
   i32.store offset=4
   global.get $assembly/index/camera
-  local.tee $2
+  local.tee $3
   f64.load
-  local.tee $4
-  f64.const 960
-  f64.sub
-  f64.abs
-  local.tee $1
-  local.get $1
+  local.tee $10
+  local.get $0
+  f64.const 64
   f64.mul
-  local.get $2
-  f64.load offset=8
-  local.tee $1
-  f64.const 960
+  local.tee $11
   f64.sub
   f64.abs
-  local.tee $7
-  local.get $7
+  local.tee $0
+  local.get $0
+  f64.mul
+  local.get $3
+  f64.load offset=8
+  local.tee $0
+  local.get $1
+  f64.const 64
+  f64.mul
+  local.tee $1
+  f64.sub
+  f64.abs
+  local.tee $12
+  local.get $12
   f64.mul
   f64.add
   f64.sqrt
   f64.const 32
   f64.sub
-  local.set $11
+  local.set $12
   block $__inlined_func$~lib/math/NativeMath.atan2
-   f64.const 960
    local.get $1
+   local.get $0
    f64.sub
    f64.neg
+   local.tee $0
+   local.get $0
+   f64.ne
+   local.get $11
+   local.get $10
+   f64.sub
    local.tee $1
    local.get $1
    f64.ne
-   f64.const 960
-   local.get $4
-   f64.sub
-   local.tee $4
-   local.get $4
-   f64.ne
    i32.or
    if
-    local.get $4
     local.get $1
+    local.get $0
     f64.add
-    local.set $1
+    local.set $0
     br $__inlined_func$~lib/math/NativeMath.atan2
    end
+   local.get $0
+   i64.reinterpret_f64
+   local.tee $2
+   i64.const 32
+   i64.shr_u
+   i32.wrap_i64
+   local.set $3
    local.get $1
    i64.reinterpret_f64
-   local.tee $0
+   local.tee $4
    i64.const 32
    i64.shr_u
    i32.wrap_i64
-   local.set $2
+   local.set $13
    local.get $4
-   i64.reinterpret_f64
-   local.tee $3
-   i64.const 32
-   i64.shr_u
    i32.wrap_i64
-   local.set $12
-   local.get $3
-   i32.wrap_i64
-   local.tee $13
-   local.get $12
+   local.tee $14
+   local.get $13
    i32.const 1072693248
    i32.sub
    i32.or
    i32.eqz
    if
-    local.get $1
+    local.get $0
     call $~lib/math/NativeMath.atan
-    local.set $1
+    local.set $0
     br $__inlined_func$~lib/math/NativeMath.atan2
    end
-   local.get $12
+   local.get $13
    i32.const 30
    i32.shr_u
    i32.const 2
    i32.and
-   local.get $2
+   local.get $3
    i32.const 31
    i32.shr_u
    i32.or
-   local.set $14
-   local.get $2
+   local.set $15
+   local.get $3
    i32.const 2147483647
    i32.and
-   local.tee $2
-   local.get $0
+   local.tee $3
+   local.get $2
    i32.wrap_i64
    i32.or
    i32.eqz
@@ -5979,155 +5975,155 @@
     block $break|0
      block $case3|0
       block $case2|0
-       local.get $14
+       local.get $15
        br_table $__inlined_func$~lib/math/NativeMath.atan2 $__inlined_func$~lib/math/NativeMath.atan2 $case2|0 $case3|0 $break|0
       end
       f64.const 3.141592653589793
-      local.set $1
+      local.set $0
       br $__inlined_func$~lib/math/NativeMath.atan2
      end
      f64.const -3.141592653589793
-     local.set $1
+     local.set $0
      br $__inlined_func$~lib/math/NativeMath.atan2
     end
    end
    block $folding-inner0
-    local.get $12
+    local.get $13
     i32.const 2147483647
     i32.and
-    local.tee $12
-    local.get $13
+    local.tee $13
+    local.get $14
     i32.or
     i32.eqz
     br_if $folding-inner0
-    local.get $12
+    local.get $13
     i32.const 2146435072
     i32.eq
     if
-     local.get $2
+     local.get $3
      i32.const 2146435072
      i32.eq
      if (result f64)
       f64.const 2.356194490192345
       f64.const 0.7853981633974483
-      local.get $14
+      local.get $15
       i32.const 2
       i32.and
       select
-      local.tee $1
+      local.tee $0
       f64.neg
-      local.get $1
-      local.get $14
+      local.get $0
+      local.get $15
       i32.const 1
       i32.and
       select
      else
       f64.const 3.141592653589793
       f64.const 0
-      local.get $14
+      local.get $15
       i32.const 2
       i32.and
       select
-      local.tee $1
+      local.tee $0
       f64.neg
-      local.get $1
-      local.get $14
+      local.get $0
+      local.get $15
       i32.const 1
       i32.and
       select
      end
-     local.set $1
+     local.set $0
      br $__inlined_func$~lib/math/NativeMath.atan2
     end
-    local.get $2
+    local.get $3
     i32.const 2146435072
     i32.eq
-    local.get $2
-    local.get $12
+    local.get $3
+    local.get $13
     i32.const 67108864
     i32.add
     i32.gt_u
     i32.or
     br_if $folding-inner0
-    local.get $12
-    local.get $2
+    local.get $13
+    local.get $3
     i32.const 67108864
     i32.add
     i32.gt_u
     i32.const 0
-    local.get $14
+    local.get $15
     i32.const 2
     i32.and
     select
     if (result f64)
      f64.const 0
     else
+     local.get $0
      local.get $1
-     local.get $4
      f64.div
      f64.abs
      call $~lib/math/NativeMath.atan
     end
-    local.set $1
+    local.set $0
     block $break|1
      block $case3|1
       block $case2|1
        block $case1|1
-        local.get $14
+        local.get $15
         br_table $__inlined_func$~lib/math/NativeMath.atan2 $case1|1 $case2|1 $case3|1 $break|1
        end
-       local.get $1
+       local.get $0
        f64.neg
-       local.set $1
+       local.set $0
        br $__inlined_func$~lib/math/NativeMath.atan2
       end
       f64.const 3.141592653589793
-      local.get $1
+      local.get $0
       f64.const 1.2246467991473532e-16
       f64.sub
       f64.sub
-      local.set $1
+      local.set $0
       br $__inlined_func$~lib/math/NativeMath.atan2
      end
-     local.get $1
+     local.get $0
      f64.const 1.2246467991473532e-16
      f64.sub
      f64.const 3.141592653589793
      f64.sub
-     local.set $1
+     local.set $0
      br $__inlined_func$~lib/math/NativeMath.atan2
     end
     unreachable
    end
    f64.const -1.5707963267948966
    f64.const 1.5707963267948966
-   local.get $14
+   local.get $15
    i32.const 1
    i32.and
    select
-   local.set $1
+   local.set $0
   end
   loop $while-continue|0
-   local.get $1
+   local.get $0
    f64.const 0
    f64.lt
    if
-    local.get $1
+    local.get $0
     f64.const 6.283185307179586
     f64.add
-    local.set $1
+    local.set $0
     br $while-continue|0
    end
   end
   loop $while-continue|1
-   local.get $1
+   local.get $0
    f64.const 6.283185307179586
    f64.gt
    if
-    local.get $1
+    local.get $0
     f64.const 6.283185307179586
     f64.sub
-    local.set $1
+    local.set $0
     br $while-continue|1
    end
   end
@@ -6135,87 +6131,87 @@
   f64.load offset=16
   f64.const 0.5235987755982988
   f64.add
-  local.get $1
+  local.get $0
   f64.sub
-  local.set $1
+  local.set $0
   loop $while-continue|02
-   local.get $1
+   local.get $0
    f64.const 0
    f64.lt
    if
-    local.get $1
+    local.get $0
     f64.const 6.283185307179586
     f64.add
-    local.set $1
+    local.set $0
     br $while-continue|02
    end
   end
   loop $while-continue|14
-   local.get $1
+   local.get $0
    f64.const 6.283185307179586
    f64.gt
    if
-    local.get $1
+    local.get $0
     f64.const 6.283185307179586
     f64.sub
-    local.set $1
+    local.set $0
     br $while-continue|14
    end
   end
-  local.get $1
+  local.get $0
   global.get $assembly/index/screenWidth
-  local.tee $2
+  local.tee $3
   f64.convert_i32_u
-  local.tee $15
+  local.tee $10
   f64.mul
   f64.const 1.0471975511965976
   f64.div
-  local.tee $1
+  local.tee $0
   f64.ceil
-  local.tee $4
-  local.get $4
+  local.tee $1
+  local.get $1
   f64.const 1
   f64.sub
+  local.get $0
   local.get $1
-  local.get $4
   f64.const 0.5
   f64.sub
   f64.ge
   select
   i64.trunc_f64_s
-  local.set $0
+  local.set $2
   f64.const 1
   f64.const 1
-  local.get $11
+  local.get $12
   f64.sub
   f64.div
   global.get $assembly/index/camera
   f64.load offset=24
-  local.get $11
+  local.get $12
   f64.div
   global.get $assembly/index/distToPlane
-  local.tee $1
+  local.tee $0
   f64.mul
   f64.add
-  local.tee $4
+  local.tee $11
   f64.ceil
   local.set $16
-  local.get $1
+  local.get $0
   f64.const 64
   f64.mul
-  local.get $11
+  local.get $12
   f64.div
-  local.tee $7
+  local.tee $1
   f64.const 0.5
   f64.mul
-  local.tee $1
-  f64.ceil
   local.tee $17
-  local.get $17
+  f64.ceil
+  local.tee $0
+  local.get $0
   f64.const 1
   f64.sub
-  local.get $1
   local.get $17
+  local.get $0
   f64.const 0.5
   f64.sub
   f64.ge
@@ -6223,14 +6219,14 @@
   i64.trunc_f64_s
   local.set $6
   f64.const 0
-  local.set $1
+  local.set $0
   global.get $assembly/index/halfHeight
   f64.convert_i32_u
   local.get $16
   local.get $16
   f64.const 1
   f64.sub
-  local.get $4
+  local.get $11
   local.get $16
   f64.const 0.5
   f64.sub
@@ -6239,17 +6235,17 @@
   f64.add
   i64.trunc_f64_s
   f64.convert_i64_s
-  local.get $2
+  local.get $3
   i32.const 1
   i32.shr_u
   f64.convert_i32_u
-  local.get $0
+  local.get $2
   f64.convert_i64_s
   f64.sub
   f64.abs
   f64.const 3.141592653589793
   f64.mul
-  local.get $15
+  local.get $10
   f64.div
   call $~lib/math/NativeMath.cos
   f64.const -2
@@ -6257,26 +6253,26 @@
   global.get $assembly/index/screenWidth
   f64.convert_i32_u
   f64.mul
-  local.get $11
+  local.get $12
   f64.div
   f64.const 4
   f64.add
   f64.add
   f64.floor
   i64.trunc_f64_s
-  local.set $8
-  f64.const 64
-  local.get $7
-  f64.div
   local.set $7
+  f64.const 64
+  local.get $1
+  f64.div
+  local.set $10
   local.get $6
   global.get $assembly/index/screenWidth
   i64.extend_i32_u
   i64.add
-  local.get $0
+  local.get $2
   i64.lt_s
   if
-   local.get $0
+   local.get $2
    global.get $assembly/index/screenWidth
    i32.const 1
    i32.shl
@@ -6288,34 +6284,34 @@
    f64.floor
    i64.trunc_f64_s
    i64.sub
-   local.set $0
+   local.set $2
   end
-  local.get $0
+  local.get $2
   local.get $6
   i64.sub
-  local.set $3
+  local.set $4
   loop $for-loop|0
-   local.get $0
+   local.get $2
    local.get $6
    i64.add
-   local.get $3
+   local.get $4
    i64.gt_s
    if
     global.get $assembly/index/screenWidth
     i64.extend_i32_u
-    local.get $3
+    local.get $4
     i64.gt_s
-    local.get $3
+    local.get $4
     i64.const 0
     i64.ge_s
     i32.and
     if
      global.get $~lib/memory/__stack_pointer
      global.get $assembly/index/wallDistances
-     local.tee $2
+     local.tee $3
      i32.store
-     local.get $2
      local.get $3
+     local.get $4
      i32.wrap_i64
      call $~lib/typedarray/Float64Array#__get
      i64.reinterpret_f64
@@ -6330,25 +6326,25 @@
      else
       global.get $~lib/memory/__stack_pointer
       global.get $assembly/index/wallDistances
-      local.tee $2
+      local.tee $3
       i32.store
-      local.get $2
       local.get $3
+      local.get $4
       i32.wrap_i64
       call $~lib/typedarray/Float64Array#__get
-      local.get $11
+      local.get $12
       f64.gt
      end
      if
       f64.const -8
-      local.set $4
-      local.get $8
+      local.set $1
+      local.get $7
       local.get $6
       i64.sub
       local.set $5
       loop $for-loop|1
        local.get $6
-       local.get $8
+       local.get $7
        i64.add
        local.get $5
        i64.gt_s
@@ -6362,7 +6358,7 @@
         i64.ge_s
         i32.and
         if
-         local.get $3
+         local.get $4
          global.get $assembly/index/screenWidth
          i64.extend_i32_u
          local.get $5
@@ -6370,75 +6366,75 @@
          i64.add
          i64.const 2
          i64.shl
-         local.set $9
-         local.get $4
+         local.set $8
+         local.get $1
          f64.floor
          f64.const 64
          f64.mul
-         local.get $1
+         local.get $0
          f64.floor
          f64.add
          i32.trunc_f64_s
          i32.const 2
          i32.shl
-         local.tee $12
+         local.tee $13
          i32.const 0
          i32.ge_s
          if (result i32)
-          local.get $10
+          local.get $9
           i32.load offset=8
-          local.get $12
+          local.get $13
           i32.gt_s
          else
           i32.const 0
          end
          if
           i32.const 3
-          local.set $2
+          local.set $3
           loop $for-loop|2
-           local.get $2
+           local.get $3
            i32.const 0
            i32.ge_s
            if
             i32.const 0
-            local.get $2
+            local.get $3
             i32.const 3
             i32.eq
-            local.get $10
-            local.get $2
-            local.get $12
+            local.get $9
+            local.get $3
+            local.get $13
             i32.add
             call $~lib/typedarray/Uint8ClampedArray#__get
-            local.tee $13
+            local.tee $14
             select
             i32.eqz
             if
              global.get $~lib/memory/__stack_pointer
              global.get $assembly/index/imageBuffer
-             local.tee $14
+             local.tee $15
              i32.store
-             local.get $14
-             local.get $2
+             local.get $15
+             local.get $3
              i64.extend_i32_s
-             local.get $9
+             local.get $8
              i64.add
              i32.wrap_i64
-             local.get $13
+             local.get $14
              call $~lib/typedarray/Uint8ClampedArray#__set
-             local.get $2
+             local.get $3
              i32.const 1
              i32.sub
-             local.set $2
+             local.set $3
              br $for-loop|2
             end
            end
           end
          end
         end
-        local.get $4
-        local.get $7
+        local.get $1
+        local.get $10
         f64.add
-        local.set $4
+        local.set $1
         local.get $5
         i64.const 1
         i64.add
@@ -6448,14 +6444,14 @@
       end
      end
     end
-    local.get $1
-    local.get $7
+    local.get $0
+    local.get $10
     f64.add
-    local.set $1
-    local.get $3
+    local.set $0
+    local.get $4
     i64.const 1
     i64.add
-    local.set $3
+    local.set $4
     br $for-loop|0
    end
   end
@@ -7013,8 +7009,8 @@
   global.set $~lib/memory/__stack_pointer
   local.get $0
  )
- (func $export:assembly/index/setMapData (param $0 i32) (result i32)
-  (local $1 i32)
+ (func $export:assembly/index/setMapData (param $0 i32) (param $1 i32) (param $2 i32) (result i32)
+  (local $3 i32)
   global.get $~lib/memory/__stack_pointer
   i32.const 4
   i32.sub
@@ -7031,15 +7027,21 @@
    unreachable
   end
   global.get $~lib/memory/__stack_pointer
-  local.tee $1
+  local.tee $3
   local.get $0
   i32.store
-  local.get $1
+  local.get $3
   i32.const 4
   i32.add
   global.set $~lib/memory/__stack_pointer
   local.get $0
   global.set $assembly/index/mapData
+  local.get $1
+  i32.extend16_s
+  global.set $assembly/index/mapSizeX
+  local.get $2
+  i32.extend16_s
+  global.set $assembly/index/mapSizeY
   global.get $assembly/index/mapData
  )
  (func $export:assembly/index/setImageBuffer (param $0 i32)

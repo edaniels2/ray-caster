@@ -12,15 +12,23 @@ export class TextureLoader {
       const sprites = new Map, textures = new Map;
       let spritesReady = false, texturesReady = false;
       for (const tileType of Object.values(TILE_TYPES)) {
-        const image = new Image();
-        image.src = IMAGE_SOURCES.TILES[tileType];
-        image.decode().then(() => {
-          textures.set(tileType, TextureLoader.extractTextureData(image));
-          texturesReady = textures.size === Object.keys(TILE_TYPES).length;
-          if (spritesReady && texturesReady) {
-            resolve({ sprites, textures });
-          }
-        });
+        if (Array.isArray(IMAGE_SOURCES.TILES[tileType])) {
+          IMAGE_SOURCES.TILES[tileType].forEach((imageSrc, i) => resolveTexture(imageSrc, tileType[i]));
+        } else {
+          resolveTexture(IMAGE_SOURCES.TILES[tileType], tileType);
+        }
+        
+        function resolveTexture(imageSrc, key) {
+          const image = new Image();
+          image.src = imageSrc;
+          image.decode().then(() => {
+            textures.set(key, TextureLoader.extractTextureData(image));
+            texturesReady = textures.size === Object.values(IMAGE_SOURCES.TILES).flat().length;
+            if (spritesReady && texturesReady) {
+              resolve({ sprites, textures });
+            }
+          });
+        }
       }
       for (const spriteType of Object.values(SPRITES)) {
         const image = new Image();

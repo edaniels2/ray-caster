@@ -1,4 +1,4 @@
-FROM 727482340929.dkr.ecr.us-east-1.amazonaws.com/docker-hub/node12:latest
+FROM public.ecr.aws/docker/library/node:16
 
 ENV PATH=$PATH:/usr/src/app/node_modules/.bin \
     NODE_ENV=development
