@@ -1,6 +1,6 @@
 import { Camera } from './camera.js';
 import { Minimap } from './minimap.js';
-import { SPRITES, TILE_TYPES } from './constants.js';
+import { BLOCK_SIZE, FOV, Q4_BOUND, SPRITES, SPRITE_LOCATIONS, TILE_TYPES } from './constants.js';
 import loadWasm from './wasm/index.js';
 import { TextureLoader } from './texture-loader.js';
 
@@ -70,11 +70,17 @@ export class RayCaster {
         this.wasmCalculations.__pin(wallPtr);
         const treePtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(SPRITES.TREE).data);
         this.wasmCalculations.__pin(treePtr);
+        const knightPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(SPRITES.KNIGHT).data);
+        this.wasmCalculations.__pin(knightPtr);
+        const dragonPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(SPRITES.DRAGON).data);
+        this.wasmCalculations.__pin(dragonPtr);
         this.wasmCalculations.setTexture(TILE_TYPES.GRASS, grassPtr);
         this.wasmCalculations.setTexture(TILE_TYPES.WATER, this.waterPtrs[0]);
         this.wasmCalculations.setTexture(TILE_TYPES.PATH, pathPtr);
         this.wasmCalculations.setTexture(TILE_TYPES.WALL, wallPtr);
         this.wasmCalculations.setSprite(SPRITES.TREE, treePtr);
+        this.wasmCalculations.setSprite(SPRITES.KNIGHT, knightPtr);
+        this.wasmCalculations.setSprite(SPRITES.DRAGON, dragonPtr);
         // create frame buffer
         const size = this.screenWidth * this.screenHeight * 4;
         const imageBufferPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, size);
@@ -94,14 +100,39 @@ export class RayCaster {
       const rayAngle = this.wasmCalculations.drawSliver(renderX, this.camera.altitude, this.camera.t, this.camera.x, this.camera.y);
       this.minimap.miniMapRay(rayAngle);
     }
-    // todo: multiple sprites - a) define different images & locations, b) determine which are currently in view, c) sort near to far, d) draw each
-    this.wasmCalculations.drawSprite(15, 15);
-    this.wasmCalculations.drawSprite(45, 15);
-    this.wasmCalculations.drawSprite(15, 45);
-    this.wasmCalculations.drawSprite(45, 45);
+
+    // I'm guessing all the sprite stuff could be done more effeciently. Nothing is nearing
+    // a bottleneck yet but if it does this is probably a good candidate for optimization
+    const camera = this.camera;
+    const normalizeAngle = this.wasmCalculations.normalizeAngle;
+    const spriteLocations = SPRITE_LOCATIONS
+      .filter(fieldOfView)
+      .sort(distFromCamera);
+
+    for (let sprite of spriteLocations) {
+      this.wasmCalculations.drawSprite(sprite.x, sprite.y, sprite.id);
+    }
     this.wasmCalculations.__collect();
 
     const imageData = new ImageData(this.imageBufferLiveView, this.screenWidth, this.screenHeight);
     this.ctx.putImageData(imageData, 0, 0);
+
+    function fieldOfView(spriteDef) {
+      const x = spriteDef.x * BLOCK_SIZE - camera.x;
+      const y = spriteDef.y * BLOCK_SIZE - camera.y;
+      const relativeAngle = normalizeAngle(Math.atan2(-y, x));
+      const fovAngle = normalizeAngle(camera.t + FOV / 2 - relativeAngle);
+      return fovAngle <= FOV * 2 || Q4_BOUND - fovAngle <= FOV;
+    }
+
+    function distFromCamera(a, b) {
+      const ax = a.x * BLOCK_SIZE;
+      const ay = a.y * BLOCK_SIZE;
+      const bx = b.x * BLOCK_SIZE;
+      const by = b.y * BLOCK_SIZE;
+      const distA = Math.sqrt(Math.pow(ax - camera.x, 2) + Math.pow(ay - camera.y, 2));
+      const distB = Math.sqrt(Math.pow(bx - camera.x, 2) + Math.pow(by - camera.y, 2));
+      return distB - distA;
+    }
   }
 }

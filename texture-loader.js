@@ -32,9 +32,17 @@ export class TextureLoader {
       }
       for (const spriteType of Object.values(SPRITES)) {
         const image = new Image();
-        image.src = IMAGE_SOURCES.SPRITES[spriteType];
+        const def = IMAGE_SOURCES.SPRITES[spriteType];
+        let x = 0, y = 0;
+        if (Array.isArray(def)) {
+          image.src = IMAGE_SOURCES.SPRITES[spriteType][0];
+          x = IMAGE_SOURCES.SPRITES[spriteType][1];
+          y = IMAGE_SOURCES.SPRITES[spriteType][2];
+        } else {
+          image.src = IMAGE_SOURCES.SPRITES[spriteType];
+        }
         image.decode().then(() => {
-          sprites.set(spriteType, TextureLoader.extractTextureData(image));
+          sprites.set(spriteType, TextureLoader.extractTextureData(image, x, y));
           spritesReady = sprites.size === Object.keys(SPRITES).length;
           if (spritesReady && texturesReady) {
             resolve({ sprites, textures });
@@ -44,13 +52,13 @@ export class TextureLoader {
     });
   }
   
-  static extractTextureData(/** @type {HTMLImageElement} */image) {
+  static extractTextureData(/** @type {HTMLImageElement} */image, x = 0, y = 0) {
     const tempCanvas = document.createElement('canvas');
     document.body.appendChild(tempCanvas);
     const ctx = tempCanvas.getContext('2d');
     tempCanvas.width = BLOCK_SIZE;
     tempCanvas.height = BLOCK_SIZE;
-    ctx.drawImage(image, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
+    ctx.drawImage(image, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
     const imageData = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE);
     tempCanvas.remove();
     return imageData;

@@ -19,7 +19,9 @@ export const TILE_TYPES = { // probably expand this to allow different textures 
   WALL: 8,
 }
 export const SPRITES = {
-  TREE: 0,
+  TREE: 1,
+  KNIGHT: 2,
+  DRAGON: 3,
 };
 
 export const IMAGE_SOURCES = {
@@ -31,7 +33,24 @@ export const IMAGE_SOURCES = {
   },
   SPRITES: {
     [SPRITES.TREE]: './sprites/Tree.png',
+    [SPRITES.KNIGHT]: ['./sprites/64x64.png', 13, 9],
+    [SPRITES.DRAGON]: ['./sprites/64x64.png', 2, 9],
   }
+};
+
+export const SPRITE_LOCATIONS = [
+  { x: 15, y: 15, id: SPRITES.TREE, },
+  { x: 15, y: 45, id: SPRITES.KNIGHT, },
+  { x: 45, y: 15, id: SPRITES.KNIGHT, },
+  { x: 45, y: 45, id: SPRITES.TREE, },
+  { x: 30, y: 30, id: SPRITES.DRAGON, },
+  { x: 29, y: 30, id: SPRITES.KNIGHT, },
+];
+
+export const INITIAL_CAMERA = {
+  x: 30 * BLOCK_SIZE + BLOCK_SIZE / 2,
+  y: 23 * BLOCK_SIZE + BLOCK_SIZE / 2,
+  t: 3 * Math.PI / 2,
 };
 
 export const MAP =  '##############################' +
@@ -98,7 +117,7 @@ export const LARGE_MAP =  '#####################################################
                           '#             _____wwwwwwwwwwwwwwwwwwwwww_____             #' +
                           '#             __  _wwwwwwwwwwwwwwwwwwwwww_  __             #' +
                           '#             __  ________________________  __             #' +
-                          '#             __            .__             __             #' +
+                          '#             __             __             __             #' +
                           '#            #__#            __            #__#            #' +
                           '#            #__#            __            #__#            #' +
                           '#            #__#            __            #__#            #' +

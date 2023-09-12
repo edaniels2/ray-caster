@@ -17,7 +17,9 @@ const TILE_TYPES: TileTypes = {
   WALL: 8,
 };
 const SPRITES: Sprites = {
-  TREE: 0,
+  TREE: 1,
+  KNIGHT: 2,
+  DRAGON: 3,
 };
 
 // these may be changed but will at least be constant per frame
@@ -166,17 +168,15 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
   return theta;
 }
 
-export function drawSprite(mapX: f64, mapY: f64): void {
-  // wip - draw a tree in the middle of the map
-  // once there are multiple sprites on screen they'll need to be sorted by distance far to near
-  const sprite: Uint8ClampedArray = sprites.get(SPRITES.TREE);
+export function drawSprite(mapX: f64, mapY: f64, spriteId: u8): void {
+  const sprite: Uint8ClampedArray = sprites.get(spriteId);
   const spritePositionX: f64 = BLOCK_SIZE * mapX;
   const spritePositionY: f64 = BLOCK_SIZE * mapY;
   const spriteDist: f64 = getDistance(camera.x, camera.y, spritePositionX, spritePositionY) - /* sprite.width */BLOCK_SIZE / 2;
   const spriteMapX: f64 = spritePositionX - camera.x;
   const spriteMapY: f64 = spritePositionY - camera.y;
-  let gamma: f64 = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
-  gamma = normalizeAngle(camera.t + FOV / 2 - gamma);
+  const viewAngle: f64 = normalizeAngle(Math.atan2(-spriteMapY, spriteMapX));
+  const gamma = normalizeAngle(camera.t + FOV / 2 - viewAngle);
   let spriteScreenX: i64 = <i64>Math.round(gamma * screenWidth / FOV);
   const altitudeCorrection: f64 = camera.alt / spriteDist * distToPlane;
   const spriteScreenY: i64 = <i64>(halfHeight + Math.round(1 / (1 - spriteDist) + altitudeCorrection));
@@ -191,15 +191,19 @@ export function drawSprite(mapX: f64, mapY: f64): void {
   if (spriteScreenX > screenWidth + halfSprite) {
     spriteScreenX -= <i64>Math.floor(screenWidth * 2 * Math.PI / FOV); // wrap around the circle
   }
-  for (let x: i64 = spriteScreenX - halfSprite; x < spriteScreenX + halfSprite; x++) {
-    if (x >= 0 && x < <i64>screenWidth) {
-      if (!wallDistances[<i32>x] || spriteDist < wallDistances[<i32>x]) {
+  const sinViewAngle = -1 * Math.sin(viewAngle);
+  let bufferCoef = <f64>halfSprite * sinViewAngle;
+  for (let counter = <u8>0; counter < spriteHeight; counter++) {
+    const bufferX = <i64>Math.floor(<f64>spriteScreenX - bufferCoef);
+    bufferCoef -= sinViewAngle;
+    if (bufferX >= 0 && bufferX < <i64>screenWidth) {
+      if (!wallDistances[<i32>bufferX] || spriteDist < wallDistances[<i32>bufferX]) {
         /** adjustment to 'move' the sprite around in its tile, probably will need to be associated with
          * the sprite image. */
-        let spriteDataY: f64 = <f64>-8;
+        let spriteDataY: f64 = spriteOffset(spriteId);
         for (let y: i64 = correctedScreenY - halfSprite; y < correctedScreenY + halfSprite; y++) {
           if (y >= 0 && y < <i64>screenHeight) {
-            const bufferStart: i64 = (y * screenWidth + x) * 4;
+            const bufferStart: i64 = (y * screenWidth + bufferX) * 4;
             const dataStart: i32 = <i32>(Math.floor(spriteDataY) * /* sprite.width */BLOCK_SIZE + Math.floor(spriteDataX)) * 4;
             if (dataStart >= 0 && dataStart < sprite.length) {
               // start on the alpha channel, if it's blank the pixel is transparent so just move on
@@ -218,6 +222,13 @@ export function drawSprite(mapX: f64, mapY: f64): void {
     }
     spriteDataX += spriteIncrement;
   }
+}
+
+function spriteOffset(spriteId: u8): f64 {
+  if (spriteId === SPRITES.TREE) {
+    return <f64>-8;
+  }
+  return <f64>0;
 }
 
 export function distToWall(sliverX: f64): f64 {
@@ -413,6 +424,8 @@ class TileTypes {
 
 class Sprites {
   TREE: u8;
+  KNIGHT: u8;
+  DRAGON: u8;
 }
 
 class HitData {

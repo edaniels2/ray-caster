@@ -2,7 +2,7 @@ import { Camera } from './camera.js';
 import { Input } from './input.js';
 import { Minimap } from './minimap.js';
 import { RayCaster } from './ray-caster.js';
-import { BLOCK_SIZE, MAP, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED } from './constants.js';
+import { BLOCK_SIZE, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED, INITIAL_CAMERA } from './constants.js';
 
 /**
  * Main entry point to the render engine. Responsible for initial setup and scheduling frame updates
@@ -28,13 +28,13 @@ export class Renderer {
     this.mainCanvas = mainCanvas;
     /** @type {number} */this.mapSizeX = mapSizeX;
     /** @type {number} */this.mapSizeY = mapSizeY;
-    const { camera, mapData } = this.loadMap(initialMap);
+    const mapData = this.loadMap(initialMap);
     /** @type {number} */const screenWidth = mainCanvas.width;
     /** @type {number} */this.distToPlane = screenWidth / 2 / Math.tan(FOV / 2);
     /** @type {number} */this.numSlivers = Math.ceil(screenWidth / SLIVER_SIZE);
     /** @type {number} */this.deltaT = FOV / this.numSlivers;
     /** @type {number[][]} */this.mapData = mapData;
-    /** @type {Camera} */this.camera = new Camera(camera);
+    /** @type {Camera} */this.camera = new Camera(INITIAL_CAMERA);
     /** @type {Minimap} */this.minimap = new Minimap(this.camera, minimapCanvas, miniMapSizeX, miniMapSizeY, mapData);
   }
 
@@ -112,17 +112,13 @@ export class Renderer {
   }
 
   loadMap(mapString) {
-    const mapData = [], camera = {x: 0, y: 0, t: 3 * Math.PI / 2};
+    const mapData = [];
     for (let i = 0; i < this.mapSizeY; i++) {
       /** @type {number[]} */
       let row = [];
       for (let j = 0; j < this.mapSizeX; j++) {
         let char = mapString[i * this.mapSizeX + j];
         switch (char) {
-          case '.':
-            // place camera in the middle of the block
-            camera.x = Math.round(j * BLOCK_SIZE + BLOCK_SIZE / 2);
-            camera.y = Math.round(i * BLOCK_SIZE + BLOCK_SIZE / 2);
           case ' ':
             row.push(TILE_TYPES.GRASS);
             break;
@@ -140,6 +136,6 @@ export class Renderer {
       }
       mapData.push(row);
     }
-    return { camera, mapData };
+    return mapData;
   }
 }
