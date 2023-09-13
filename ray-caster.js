@@ -1,6 +1,6 @@
 import { Camera } from './camera.js';
 import { Minimap } from './minimap.js';
-import { BLOCK_SIZE, FOV, Q4_BOUND, SPRITES, SPRITE_LOCATIONS, TILE_TYPES } from './constants.js';
+import { BLOCK_SIZE, FOV, Q4_BOUND, SPRITES, SPRITE_LOCATIONS, TEXTURE_FRAMES, TEXTURES, SPRITE_FRAMES } from './constants.js';
 import loadWasm from './wasm/index.js';
 import { TextureLoader } from './texture-loader.js';
 
@@ -16,7 +16,8 @@ export class RayCaster {
   /** @type {Uint8ClampedArray} */imageBufferLiveView = null;
   /** @type {number} */mapPtr = null;
   /** @type {number} */wallSlice = null;
-  /** @type {number[]} */waterPtrs = Array(4);
+  /** @type Map<number, Uint8ClampedArray[] */animatedSprites = new Map;
+  /** @type Map<number, Uint8ClampedArray[] */animatedTextures = new Map;
   wasmCalculations = null;
 
   constructor(camera, distToPlane, mapData, canvas, numSlivers, deltaT, minimap, mapSizeX, mapSizeY) {
@@ -54,33 +55,39 @@ export class RayCaster {
         const mapDataLinear = this.mapData.flat();
         this.mapPtr = this.wasmCalculations.setMapData(this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, mapDataLinear), this.mapSizeX, this.mapSizeY);
         this.wasmCalculations.__pin(this.mapPtr);
-        const grassPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.GRASS).data);
-        this.wasmCalculations.__pin(grassPtr);
-        this.waterPtrs[0] = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.WATER[0]).data);
-        this.wasmCalculations.__pin(this.waterPtrs[0]);
-        this.waterPtrs[1] = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.WATER[1]).data);
-        this.wasmCalculations.__pin(this.waterPtrs[1]);
-        this.waterPtrs[2] = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.WATER[2]).data);
-        this.wasmCalculations.__pin(this.waterPtrs[2]);
-        this.waterPtrs[3] = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.WATER[3]).data);
-        this.wasmCalculations.__pin(this.waterPtrs[3]);
-        const pathPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.PATH).data);
-        this.wasmCalculations.__pin(pathPtr);
-        const wallPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(TILE_TYPES.WALL).data);
-        this.wasmCalculations.__pin(wallPtr);
-        const treePtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(SPRITES.TREE).data);
-        this.wasmCalculations.__pin(treePtr);
-        const knightPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(SPRITES.KNIGHT).data);
-        this.wasmCalculations.__pin(knightPtr);
-        const dragonPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(SPRITES.DRAGON).data);
-        this.wasmCalculations.__pin(dragonPtr);
-        this.wasmCalculations.setTexture(TILE_TYPES.GRASS, grassPtr);
-        this.wasmCalculations.setTexture(TILE_TYPES.WATER, this.waterPtrs[0]);
-        this.wasmCalculations.setTexture(TILE_TYPES.PATH, pathPtr);
-        this.wasmCalculations.setTexture(TILE_TYPES.WALL, wallPtr);
-        this.wasmCalculations.setSprite(SPRITES.TREE, treePtr);
-        this.wasmCalculations.setSprite(SPRITES.KNIGHT, knightPtr);
-        this.wasmCalculations.setSprite(SPRITES.DRAGON, dragonPtr);
+
+        // set up image data for all the sprites & textures in the wasm module
+        for (let value of Object.values(TEXTURES)) {
+          if (TEXTURE_FRAMES[value]) {
+            const frames = TEXTURE_FRAMES[value].map(frameId => {
+              const pointer = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(frameId).data);
+              this.wasmCalculations.__pin(pointer);
+              return pointer;
+            });
+            this.animatedTextures.set(value, frames);
+            this.wasmCalculations.setTexture(value, frames[0]);
+          } else {
+            const pointer = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, textures.get(value).data);
+            this.wasmCalculations.__pin(pointer);
+            this.wasmCalculations.setTexture(value, pointer);
+          }
+        }
+        for (let value of Object.values(SPRITES)) {
+          if (SPRITE_FRAMES[value]) {
+            const frames = SPRITE_FRAMES[value].ids.map(frameId => {
+              const pointer = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(frameId).data);
+              this.wasmCalculations.__pin(pointer);
+              return pointer;
+            });
+            this.animatedSprites.set(value, frames);
+            this.wasmCalculations.setSprite(value, frames[0]);
+          } else {
+            const pointer = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, sprites.get(value).data);
+            this.wasmCalculations.__pin(pointer);
+            this.wasmCalculations.setSprite(value, pointer);
+          }
+        }
+
         // create frame buffer
         const size = this.screenWidth * this.screenHeight * 4;
         const imageBufferPtr = this.wasmCalculations.__newArray(this.wasmCalculations.Uint8ClampedArray_ID, size);

@@ -9,7 +9,7 @@ const Q1_BOUND: f64 = Math.PI / 2;
 const Q2_BOUND: f64 = Math.PI;
 const Q3_BOUND: f64 = 3 * Math.PI / 2;
 const Q4_BOUND: f64 = 2 * Math.PI;
-const TILE_TYPES: TileTypes = {
+const TEXTURES: TileTypes = {
   GRASS: 1,
   PATH: 2,
   WATER: 4,
@@ -18,7 +18,7 @@ const TILE_TYPES: TileTypes = {
 };
 const SPRITES: Sprites = {
   TREE: 1,
-  KNIGHT: 2,
+  RAIDEN: 2,
   DRAGON: 3,
 };
 
@@ -121,7 +121,7 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
         }
       } else {
         // wall texture
-        const texture = textures.get(TILE_TYPES.WALL);
+        const texture = textures.get(TEXTURES.WALL);
         const tileX = <u32>wallSlice;
         const tileY = <u32>Math.floor((renderY - topOfWall) / height * BLOCK_SIZE);
         const dataStart = <i64>(tileY * BLOCK_SIZE + tileX) * 4;
@@ -363,7 +363,7 @@ function hitData(data: HitData, intersectVert: bool): HitResult {
   let slice: u8 = 0;
   if (gridX < 0 || gridX >= <f64>mapSizeX || gridY < 0 || gridY >= <f64>(mapSizeY)) {
     outOfBounds = true;
-  } else if (mapData[<i32>(f64(gridY * mapSizeX) + gridX)] == TILE_TYPES.WALL) {
+  } else if (mapData[<i32>(f64(gridY * mapSizeX) + gridX)] == TEXTURES.WALL) {
     hit = true;
     if (intersectVert) {
       slice = <u8>(Math.floor(data.x) % BLOCK_SIZE);
@@ -378,7 +378,7 @@ function hitData(data: HitData, intersectVert: bool): HitResult {
     gridX = <f64>Math.floor(data.x / <f64>BLOCK_SIZE);
     if (gridX < 0 || gridX >= <f64>mapSizeX || gridY < 0 || gridY >= <f64>mapSizeY) {
       outOfBounds = true;
-    } else if (mapData[<i32>(trunc(gridY * mapSizeX) + gridX)] == TILE_TYPES.WALL) {
+    } else if (mapData[<i32>(trunc(gridY * mapSizeX) + gridX)] == TEXTURES.WALL) {
       hit = true;
       if (intersectVert) {
         slice = <u8>(Math.floor(data.x) % BLOCK_SIZE);
@@ -424,7 +424,7 @@ class TileTypes {
 
 class Sprites {
   TREE: u8;
-  KNIGHT: u8;
+  RAIDEN: u8;
   DRAGON: u8;
 }
 

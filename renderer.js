@@ -2,7 +2,7 @@ import { Camera } from './camera.js';
 import { Input } from './input.js';
 import { Minimap } from './minimap.js';
 import { RayCaster } from './ray-caster.js';
-import { BLOCK_SIZE, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TILE_TYPES, TURN_SPEED, INITIAL_CAMERA } from './constants.js';
+import { BLOCK_SIZE, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TEXTURES, TURN_SPEED, INITIAL_CAMERA, TEXTURE_FRAMES, SPRITE_FRAMES } from './constants.js';
 
 /**
  * Main entry point to the render engine. Responsible for initial setup and scheduling frame updates
@@ -56,13 +56,14 @@ export class Renderer {
     const FRAME_RATE = 1 / secondsElapsed;
     const moveSpeed = MOVE_SPEED * 24 / FRAME_RATE;
     const turnSpeed = TURN_SPEED * 24 / FRAME_RATE;
+    this.animationCounter += secondsElapsed;
     let positionChanged = false;
     if (this.camera.movingFwd) {
       const targetX = this.camera.x + Math.cos(this.camera.t) * moveSpeed;
       const targetY = this.camera.y - Math.sin(this.camera.t) * moveSpeed;
       const gridY = Math.floor(targetY / BLOCK_SIZE);
       const gridX = Math.floor(targetX / BLOCK_SIZE);
-      if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
+      if (this.mapData[gridY][gridX] !== TEXTURES.WALL) {
         this.camera.x = targetX;
         this.camera.y = targetY;
         positionChanged = true;
@@ -73,7 +74,29 @@ export class Renderer {
       const targetY = this.camera.y + Math.sin(this.camera.t) * moveSpeed;
       const gridY = Math.floor(targetY / BLOCK_SIZE);
       const gridX = Math.floor(targetX / BLOCK_SIZE);
-      if (this.mapData[gridY][gridX] !== TILE_TYPES.WALL) {
+      if (this.mapData[gridY][gridX] !== TEXTURES.WALL) {
+        this.camera.x = targetX;
+        this.camera.y = targetY;
+        positionChanged = true;
+      }
+    }
+    if (this.camera.strafeLeft) {
+      const targetX = this.camera.x - Math.sin(this.camera.t) * moveSpeed;
+      const targetY = this.camera.y - Math.cos(this.camera.t) * moveSpeed;
+      const gridY = Math.floor(targetY / BLOCK_SIZE);
+      const gridX = Math.floor(targetX / BLOCK_SIZE);
+      if (this.mapData[gridY][gridX] !== TEXTURES.WALL) {
+        this.camera.x = targetX;
+        this.camera.y = targetY;
+        positionChanged = true;
+      }
+    }
+    if (this.camera.strafeRight) {
+      const targetX = this.camera.x + Math.sin(this.camera.t) * moveSpeed;
+      const targetY = this.camera.y + Math.cos(this.camera.t) * moveSpeed;
+      const gridY = Math.floor(targetY / BLOCK_SIZE);
+      const gridX = Math.floor(targetX / BLOCK_SIZE);
+      if (this.mapData[gridY][gridX] !== TEXTURES.WALL) {
         this.camera.x = targetX;
         this.camera.y = targetY;
         positionChanged = true;
@@ -101,11 +124,16 @@ export class Renderer {
       this.minimap.updateOffset();
       this.mapChanged = false;
     }
-    if (++this.animationCounter === 128) {
-      this.animationCounter = 0;
-    }
     this.minimap.drawMiniMap(this.mapData, this.camera);
-    this.rayCaster.wasmCalculations.setTexture(TILE_TYPES.WATER, this.rayCaster.waterPtrs[this.animationCounter >> 5]);
+
+    for (let key of Object.keys(TEXTURE_FRAMES)) {
+      const frameIndex = Math.floor(this.animationCounter * 4) % this.rayCaster.animatedTextures.get(Number(key)).length;
+      this.rayCaster.wasmCalculations.setTexture(key, this.rayCaster.animatedTextures.get(Number(key))[frameIndex]);
+    }
+    for (let [key, value] of Object.entries(SPRITE_FRAMES)) {
+      const frameIndex = Math.floor(this.animationCounter * value.speed) % this.rayCaster.animatedSprites.get(Number(key)).length;
+      this.rayCaster.wasmCalculations.setSprite(key, this.rayCaster.animatedSprites.get(Number(key))[frameIndex]);
+    }
     this.rayCaster.cast();
     this.prevTimestamp = timestamp;
     requestAnimationFrame(this.update.bind(this));
@@ -120,16 +148,16 @@ export class Renderer {
         let char = mapString[i * this.mapSizeX + j];
         switch (char) {
           case ' ':
-            row.push(TILE_TYPES.GRASS);
+            row.push(TEXTURES.GRASS);
             break;
           case '#':
-            row.push(TILE_TYPES.WALL);
+            row.push(TEXTURES.WALL);
             break;
           case 'w':
-            row.push(TILE_TYPES.WATER)
+            row.push(TEXTURES.WATER)
             break;
           case '_':
-            row.push(TILE_TYPES.PATH);
+            row.push(TEXTURES.PATH);
             break;
           // should put a default but for now just make sure the map string is valid
         }

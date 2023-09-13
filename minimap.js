@@ -1,5 +1,5 @@
 import { Camera } from './camera.js';
-import { BLOCK_SIZE, MINIMAP_TILE_SIZE, TILE_TYPES } from './constants.js';
+import { BLOCK_SIZE, MINIMAP_TILE_SIZE, TEXTURES } from './constants.js';
 
 /**
  * Draws the minimap given current camera condition. Also handles the map editor functionality.
@@ -58,10 +58,10 @@ export class Minimap {
         const xOffset = j + this.mapOffsetX;
         let fillSquare = true;
         switch (this.mapData?.[yOffset]?.[xOffset]) {
-          case TILE_TYPES.WALL:
+          case TEXTURES.WALL:
             this.ctx.fillStyle = '#000000';
             break;
-          case TILE_TYPES.WATER:
+          case TEXTURES.WATER:
             this.ctx.fillStyle = '#07f';
             break;
           default:
@@ -142,7 +142,7 @@ export class Minimap {
     const { x, y } = this.getCanvasCoords(mouse, this.canvas);
     const gridX = Math.floor(x / MINIMAP_TILE_SIZE) + this.mapOffsetX;
     const gridY = Math.floor(y / MINIMAP_TILE_SIZE) + this.mapOffsetY;
-    const removing = this.mapData[gridY][gridX] === TILE_TYPES.WALL;
+    const removing = this.mapData[gridY][gridX] === TEXTURES.WALL;
     toggleTile.call(this, mouse);
     this.canvas.onpointermove = toggleTile.bind(this);
 
@@ -153,10 +153,10 @@ export class Minimap {
       const mapTileY = Math.floor(y / MINIMAP_TILE_SIZE);
       const worldTileY = mapTileY + this.mapOffsetY;
       if (removing) {
-        this.mapData[worldTileY][worldTileX] = TILE_TYPES.GRASS;
+        this.mapData[worldTileY][worldTileX] = TEXTURES.GRASS;
         this.ctx.clearRect(mapTileX * MINIMAP_TILE_SIZE + 1, mapTileY * MINIMAP_TILE_SIZE + 1, MINIMAP_TILE_SIZE - 2, MINIMAP_TILE_SIZE - 2);
       } else {
-        this.mapData[worldTileY][worldTileX] = TILE_TYPES.WALL;
+        this.mapData[worldTileY][worldTileX] = TEXTURES.WALL;
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(mapTileX * MINIMAP_TILE_SIZE, mapTileY * MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE);
       }

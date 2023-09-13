@@ -8,6 +8,8 @@ export class Camera {
   movingBack = false;
   turningLeft = false;
   turningRight = false;
+  strafeLeft = false;
+  strafeRight = false;
   x = 0;
   y = 0;
   t = 0;

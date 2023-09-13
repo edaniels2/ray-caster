@@ -1,4 +1,4 @@
-import { BLOCK_SIZE, TILE_TYPES, SPRITES, IMAGE_SOURCES } from './constants.js';
+import { BLOCK_SIZE, TEXTURES, SPRITES, IMAGE_SOURCES, TEXTURE_FRAMES, SPRITE_FRAMES } from './constants.js';
 
 /**
  * Extracts ImageData objects from external files and maps them to their type defined in 'constants.js'
@@ -11,9 +11,12 @@ export class TextureLoader {
     return new Promise(resolve => {
       const sprites = new Map, textures = new Map;
       let spritesReady = false, texturesReady = false;
-      for (const tileType of Object.values(TILE_TYPES)) {
+      for (const tileType of Object.values(TEXTURES)) {
         if (Array.isArray(IMAGE_SOURCES.TILES[tileType])) {
-          IMAGE_SOURCES.TILES[tileType].forEach((imageSrc, i) => resolveTexture(imageSrc, tileType[i]));
+          IMAGE_SOURCES.TILES[tileType].forEach((imageSrc, i) => {
+            const key = TEXTURE_FRAMES[tileType][i];
+            resolveTexture(imageSrc, key);
+          });
         } else {
           resolveTexture(IMAGE_SOURCES.TILES[tileType], tileType);
         }
@@ -31,23 +34,32 @@ export class TextureLoader {
         }
       }
       for (const spriteType of Object.values(SPRITES)) {
-        const image = new Image();
         const def = IMAGE_SOURCES.SPRITES[spriteType];
-        let x = 0, y = 0;
         if (Array.isArray(def)) {
-          image.src = IMAGE_SOURCES.SPRITES[spriteType][0];
-          x = IMAGE_SOURCES.SPRITES[spriteType][1];
-          y = IMAGE_SOURCES.SPRITES[spriteType][2];
+          def.forEach((frameDef, i) => {
+            const key = SPRITE_FRAMES[spriteType].ids[i];
+            resolveSprite(frameDef, key);
+          })
         } else {
-          image.src = IMAGE_SOURCES.SPRITES[spriteType];
+          resolveSprite(def, spriteType);
         }
-        image.decode().then(() => {
-          sprites.set(spriteType, TextureLoader.extractTextureData(image, x, y));
-          spritesReady = sprites.size === Object.keys(SPRITES).length;
-          if (spritesReady && texturesReady) {
-            resolve({ sprites, textures });
+
+        function resolveSprite(def, key) {
+          const image = new Image();
+          let x = 0, y = 0;
+          image.src = def.file;
+          if (def.coords) {
+            x = def.coords[0];
+            y = def.coords[1];
           }
-        });
+          image.decode().then(() => {
+            sprites.set(key, TextureLoader.extractTextureData(image, x, y));
+            spritesReady = sprites.size === Object.values(IMAGE_SOURCES.SPRITES).flat().length;
+            if (spritesReady && texturesReady) {
+              resolve({ sprites, textures });
+            }
+          });
+        }
       }
     });
   }
