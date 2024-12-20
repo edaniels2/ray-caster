@@ -116,8 +116,9 @@ export class RayCaster {
       .filter(fieldOfView)
       .sort(distFromCamera);
 
-    for (let sprite of spriteLocations) {
-      this.wasmCalculations.drawSprite(sprite.x, sprite.y, sprite.id);
+    for (const sprite of spriteLocations) {
+      let {x, y, t = 0, id} = sprite;
+      this.wasmCalculations.drawSprite(x, y, t, id);
     }
     this.wasmCalculations.__collect();
 
@@ -125,18 +126,18 @@ export class RayCaster {
     this.ctx.putImageData(imageData, 0, 0);
 
     function fieldOfView(spriteDef) {
-      const x = spriteDef.x * BLOCK_SIZE - camera.x;
-      const y = spriteDef.y * BLOCK_SIZE - camera.y;
+      const x = spriteDef.x - camera.x;
+      const y = spriteDef.y - camera.y;
       const relativeAngle = normalizeAngle(Math.atan2(-y, x));
       const fovAngle = normalizeAngle(camera.t + FOV / 2 - relativeAngle);
       return fovAngle <= FOV * 2 || Q4_BOUND - fovAngle <= FOV;
     }
 
     function distFromCamera(a, b) {
-      const ax = a.x * BLOCK_SIZE;
-      const ay = a.y * BLOCK_SIZE;
-      const bx = b.x * BLOCK_SIZE;
-      const by = b.y * BLOCK_SIZE;
+      const ax = a.x;
+      const ay = a.y;
+      const bx = b.x;
+      const by = b.y;
       const distA = Math.sqrt(Math.pow(ax - camera.x, 2) + Math.pow(ay - camera.y, 2));
       const distB = Math.sqrt(Math.pow(bx - camera.x, 2) + Math.pow(by - camera.y, 2));
       return distB - distA;

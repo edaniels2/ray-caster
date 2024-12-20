@@ -20,6 +20,15 @@ const SPRITES: Sprites = {
   TREE: 1,
   RAIDEN: 2,
   DRAGON: 3,
+  WALKER0: 20,
+  WALKER1: 36,
+  WALKER2: 52,
+  WALKER3: 68,
+  WALKER4: 84,
+  WALKER5: 100,
+  WALKER6: 116,
+  WALKER7: 132,
+  CAPYBARA: 148,
 };
 
 // these may be changed but will at least be constant per frame
@@ -109,7 +118,7 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
         // const tileX = Math.floor(x % BLOCK_SIZE);
         // const tileY = y < 0 ? Math.floor(y % BLOCK_SIZE) + BLOCK_SIZE : Math.floor(y % BLOCK_SIZE);
         // const dataStart = (tileY * this.floorTextureData.width + tileX) * 4; // change to a different texture
-        // for (let offset = 0; offset < 4; offset++) {
+      // for (let    = 0; offset < 4; offset++) {
         //   imageBuffer[<i32>(bufferStart + offset] = this.floorTextureData.data[dataStart + offset];
         // }
       }
@@ -168,10 +177,10 @@ export function drawSliver(renderX: f64, cameraAlt: f64, cameraAngle: f64, camer
   return theta;
 }
 
-export function drawSprite(mapX: f64, mapY: f64, spriteId: u8): void {
+export function drawSprite(spritePositionX: f64, spritePositionY: f64, rotation: f64, spriteId: u8): void {
   const sprite: Uint8ClampedArray = sprites.get(spriteId);
-  const spritePositionX: f64 = BLOCK_SIZE * mapX;
-  const spritePositionY: f64 = BLOCK_SIZE * mapY;
+  // const spritePositionX: f64 = BLOCK_SIZE * mapX;
+  // const spritePositionY: f64 = BLOCK_SIZE * mapY;
   const spriteDist: f64 = getDistance(camera.x, camera.y, spritePositionX, spritePositionY) - /* sprite.width */BLOCK_SIZE / 2;
   const spriteMapX: f64 = spritePositionX - camera.x;
   const spriteMapY: f64 = spritePositionY - camera.y;
@@ -191,7 +200,7 @@ export function drawSprite(mapX: f64, mapY: f64, spriteId: u8): void {
   if (spriteScreenX > screenWidth + halfSprite) {
     spriteScreenX -= <i64>Math.floor(screenWidth * 2 * Math.PI / FOV); // wrap around the circle
   }
-  const sinViewAngle = -1 * Math.sin(viewAngle);
+  const sinViewAngle = Math.sin(normalizeAngle(viewAngle + rotation));
   let bufferCoef = <f64>halfSprite * sinViewAngle;
   for (let counter = <u8>0; counter < spriteHeight; counter++) {
     const bufferX = <i64>Math.floor(<f64>spriteScreenX - bufferCoef);
@@ -225,8 +234,18 @@ export function drawSprite(mapX: f64, mapY: f64, spriteId: u8): void {
 }
 
 function spriteOffset(spriteId: u8): f64 {
-  if (spriteId === SPRITES.TREE) {
-    return <f64>-8;
+  switch (spriteId) {
+    case SPRITES.TREE:
+    case SPRITES.WALKER0:
+    case SPRITES.WALKER1:
+    case SPRITES.WALKER2:
+    case SPRITES.WALKER3:
+    case SPRITES.WALKER4:
+    case SPRITES.WALKER5:
+    case SPRITES.WALKER6:
+    case SPRITES.WALKER7:
+    case SPRITES.CAPYBARA:
+      return <f64>-8;
   }
   return <f64>0;
 }
@@ -426,6 +445,15 @@ class Sprites {
   TREE: u8;
   RAIDEN: u8;
   DRAGON: u8;
+  WALKER0: u8;
+  WALKER1: u8;
+  WALKER2: u8;
+  WALKER3: u8;
+  WALKER4: u8;
+  WALKER5: u8;
+  WALKER6: u8;
+  WALKER7: u8;
+  CAPYBARA: u8;
 }
 
 class HitData {

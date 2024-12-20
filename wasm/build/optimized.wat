@@ -12,7 +12,7 @@
  (type $i64_=>_i32 (func (param i64) (result i32)))
  (type $i32_i32_=>_f64 (func (param i32 i32) (result f64)))
  (type $f64_f64_f64_f64_f64_=>_f64 (func (param f64 f64 f64 f64 f64) (result f64)))
- (type $f64_f64_i32_=>_none (func (param f64 f64 i32)))
+ (type $f64_f64_f64_i32_=>_none (func (param f64 f64 f64 i32)))
  (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
  (global $~lib/rt/itcms/total (mut i32) (i32.const 0))
@@ -25,7 +25,7 @@
  (global $~lib/rt/itcms/white (mut i32) (i32.const 0))
  (global $~lib/rt/itcms/fromSpace (mut i32) (i32.const 0))
  (global $~lib/rt/tlsf/ROOT (mut i32) (i32.const 0))
- (global $assembly/index/TILE_TYPES (mut i32) (i32.const 0))
+ (global $assembly/index/TEXTURES (mut i32) (i32.const 0))
  (global $assembly/index/SPRITES (mut i32) (i32.const 0))
  (global $assembly/index/screenWidth (mut i32) (i32.const 320))
  (global $assembly/index/screenHeight (mut i32) (i32.const 200))
@@ -98,7 +98,7 @@
  (func $~lib/rt/itcms/visitRoots
   (local $0 i32)
   (local $1 i32)
-  global.get $assembly/index/TILE_TYPES
+  global.get $assembly/index/TEXTURES
   local.tee $0
   if
    local.get $0
@@ -239,11 +239,11 @@
   local.get $0
   i32.store offset=8
   local.get $0
+  local.get $1
   local.get $0
   i32.load offset=4
   i32.const 3
   i32.and
-  local.get $1
   i32.or
   i32.store offset=4
  )
@@ -251,8 +251,8 @@
   (local $1 i32)
   (local $2 i32)
   (local $3 i32)
-  global.get $~lib/rt/itcms/iter
   local.get $0
+  global.get $~lib/rt/itcms/iter
   i32.eq
   if
    local.get $0
@@ -282,10 +282,10 @@
   if (result i32)
    i32.const 1
   else
+   local.get $2
    i32.const 2064
    i32.load
-   local.get $2
-   i32.lt_u
+   i32.gt_u
    if
     i32.const 1248
     i32.const 1312
@@ -308,23 +308,23 @@
   i32.load offset=8
   local.set $2
   local.get $0
-  local.get $1
   global.get $~lib/rt/itcms/white
   i32.eqz
   i32.const 2
   local.get $3
   select
+  local.get $1
   i32.or
   i32.store offset=4
   local.get $0
   local.get $2
   i32.store offset=8
   local.get $2
+  local.get $0
   local.get $2
   i32.load offset=4
   i32.const 3
   i32.and
-  local.get $0
   i32.or
   i32.store offset=4
   local.get $1
@@ -427,37 +427,37 @@
    local.get $5
    i32.store offset=4
   end
-  local.get $4
+  local.get $1
+  local.get $0
   local.get $2
   i32.const 4
   i32.shl
+  local.get $4
   i32.add
   i32.const 2
   i32.shl
-  local.get $0
   i32.add
   i32.load offset=96
-  local.get $1
   i32.eq
   if
-   local.get $4
+   local.get $0
    local.get $2
    i32.const 4
    i32.shl
+   local.get $4
    i32.add
    i32.const 2
    i32.shl
-   local.get $0
    i32.add
    local.get $3
    i32.store offset=96
    local.get $3
    i32.eqz
    if
+    local.get $0
     local.get $2
     i32.const 2
     i32.shl
-    local.get $0
     i32.add
     local.tee $1
     i32.load offset=4
@@ -608,12 +608,12 @@
    call $~lib/builtins/abort
    unreachable
   end
-  local.get $2
+  local.get $4
   local.get $1
   i32.const 4
   i32.add
+  local.get $2
   i32.add
-  local.get $4
   i32.ne
   if
    i32.const 0
@@ -674,14 +674,14 @@
    call $~lib/builtins/abort
    unreachable
   end
-  local.get $2
+  local.get $0
   local.get $5
   i32.const 4
   i32.shl
+  local.get $2
   i32.add
   i32.const 2
   i32.shl
-  local.get $0
   i32.add
   i32.load offset=96
   local.set $3
@@ -697,14 +697,14 @@
    local.get $1
    i32.store offset=4
   end
-  local.get $2
+  local.get $0
   local.get $5
   i32.const 4
   i32.shl
+  local.get $2
   i32.add
   i32.const 2
   i32.shl
-  local.get $0
   i32.add
   local.get $1
   i32.store offset=96
@@ -716,10 +716,10 @@
   i32.shl
   i32.or
   i32.store
+  local.get $0
   local.get $5
   i32.const 2
   i32.shl
-  local.get $0
   i32.add
   local.tee $0
   local.get $0
@@ -756,11 +756,11 @@
   i32.load offset=1568
   local.tee $3
   if
-   local.get $1
    local.get $3
    i32.const 4
    i32.add
-   i32.lt_u
+   local.get $1
+   i32.gt_u
    if
     i32.const 0
     i32.const 1392
@@ -769,10 +769,10 @@
     call $~lib/builtins/abort
     unreachable
    end
-   local.get $3
    local.get $1
    i32.const 16
    i32.sub
+   local.get $3
    i32.eq
    if
     local.get $3
@@ -784,11 +784,11 @@
     local.set $1
    end
   else
-   local.get $1
    local.get $0
    i32.const 1572
    i32.add
-   i32.lt_u
+   local.get $1
+   i32.gt_u
    if
     i32.const 0
     i32.const 1392
@@ -827,10 +827,10 @@
   local.get $1
   i32.const 0
   i32.store offset=8
-  local.get $2
   local.get $1
   i32.const 4
   i32.add
+  local.get $2
   i32.add
   local.tee $2
   i32.const 2
@@ -887,10 +887,10 @@
      i32.const 16
      i32.lt_u
      if
-      local.get $0
       local.get $1
       i32.const 4
       i32.shl
+      local.get $0
       i32.add
       i32.const 2
       i32.shl
@@ -951,25 +951,25 @@
     i32.and
     local.set $0
     loop $while-continue|1
-     global.get $~lib/rt/itcms/toSpace
      local.get $0
+     global.get $~lib/rt/itcms/toSpace
      i32.ne
      if
       local.get $0
       global.set $~lib/rt/itcms/iter
+      local.get $1
       local.get $0
       i32.load offset=4
       i32.const 3
       i32.and
-      local.get $1
       i32.ne
       if
        local.get $0
-       local.get $1
        local.get $0
        i32.load offset=4
        i32.const -4
        i32.and
+       local.get $1
        i32.or
        i32.store offset=4
        i32.const 0
@@ -1026,23 +1026,23 @@
      i32.and
      local.set $0
      loop $while-continue|2
-      global.get $~lib/rt/itcms/toSpace
       local.get $0
+      global.get $~lib/rt/itcms/toSpace
       i32.ne
       if
+       local.get $1
        local.get $0
        i32.load offset=4
        i32.const 3
        i32.and
-       local.get $1
        i32.ne
        if
         local.get $0
-        local.get $1
         local.get $0
         i32.load offset=4
         i32.const -4
         i32.and
+        local.get $1
         i32.or
         i32.store offset=4
         local.get $0
@@ -1198,13 +1198,13 @@
    i32.shr_u
   else
    i32.const 31
+   local.get $1
    i32.const 1
    i32.const 27
    local.get $1
    i32.clz
    i32.sub
    i32.shl
-   local.get $1
    i32.add
    i32.const 1
    i32.sub
@@ -1244,10 +1244,10 @@
    call $~lib/builtins/abort
    unreachable
   end
+  local.get $0
   local.get $2
   i32.const 2
   i32.shl
-  local.get $0
   i32.add
   i32.load offset=4
   i32.const -1
@@ -1256,6 +1256,7 @@
   i32.and
   local.tee $1
   if (result i32)
+   local.get $0
    local.get $1
    i32.ctz
    local.get $2
@@ -1264,7 +1265,6 @@
    i32.add
    i32.const 2
    i32.shl
-   local.get $0
    i32.add
    i32.load offset=96
   else
@@ -1278,12 +1278,12 @@
    i32.and
    local.tee $1
    if (result i32)
+    local.get $0
     local.get $1
     i32.ctz
     local.tee $1
     i32.const 2
     i32.shl
-    local.get $0
     i32.add
     i32.load offset=4
     local.tee $2
@@ -1296,6 +1296,7 @@
      call $~lib/builtins/abort
      unreachable
     end
+    local.get $0
     local.get $2
     i32.ctz
     local.get $1
@@ -1304,7 +1305,6 @@
     i32.add
     i32.const 2
     i32.shl
-    local.get $0
     i32.add
     i32.load offset=96
    else
@@ -1363,13 +1363,13 @@
     end
     global.get $~lib/rt/itcms/total
     local.tee $2
-    local.get $2
     global.get $~lib/rt/itcms/threshold
     i32.sub
     i32.const 1024
     i32.lt_u
     i32.const 10
     i32.shl
+    local.get $2
     i32.add
     global.set $~lib/rt/itcms/threshold
    end
@@ -1425,6 +1425,7 @@
    i32.sub
    i32.ne
    i32.shl
+   local.get $5
    i32.const 1
    i32.const 27
    local.get $5
@@ -1433,7 +1434,6 @@
    i32.shl
    i32.const 1
    i32.sub
-   local.get $5
    i32.add
    local.get $5
    local.get $5
@@ -1486,12 +1486,12 @@
     unreachable
    end
   end
+  local.get $5
   local.get $2
   i32.load
   i32.const -4
   i32.and
-  local.get $5
-  i32.lt_u
+  i32.gt_u
   if
    i32.const 0
    i32.const 1392
@@ -1529,16 +1529,16 @@
   i32.ge_u
   if
    local.get $2
+   local.get $5
    local.get $3
    i32.const 2
    i32.and
-   local.get $5
    i32.or
    i32.store
-   local.get $5
    local.get $2
    i32.const 4
    i32.add
+   local.get $5
    i32.add
    local.tee $3
    local.get $6
@@ -1582,19 +1582,19 @@
   i32.load offset=8
   local.set $3
   local.get $2
-  global.get $~lib/rt/itcms/white
   local.get $1
+  global.get $~lib/rt/itcms/white
   i32.or
   i32.store offset=4
   local.get $2
   local.get $3
   i32.store offset=8
   local.get $3
+  local.get $2
   local.get $3
   i32.load offset=4
   i32.const 3
   i32.and
-  local.get $2
   i32.or
   i32.store offset=4
   local.get $1
@@ -2089,10 +2089,10 @@
   i64.shr_u
   i64.add
   global.set $~lib/math/res128_hi
+  local.get $8
   local.get $1
   i64.const 32
   i64.shr_u
-  local.get $8
   i64.mul
   local.tee $1
   local.get $9
@@ -2134,10 +2134,10 @@
   local.get $1
   local.get $8
   i64.shl
-  local.get $7
   local.get $2
   i64.const 2
   i64.shl
+  local.get $7
   i64.xor
   local.tee $9
   i64.const 64
@@ -2212,7 +2212,6 @@
   i64.add
   f64.convert_i64_u
   global.set $~lib/math/rempio2_y0
-  local.get $2
   local.get $9
   i64.const 53
   i64.shl
@@ -2220,6 +2219,7 @@
   i64.const 11
   i64.shr_u
   i64.or
+  local.get $2
   i64.add
   f64.convert_i64_u
   f64.const 5.421010862427522e-20
@@ -2613,7 +2613,7 @@
    i32.const 8
    i32.store8 offset=3
    local.get $1
-   global.set $assembly/index/TILE_TYPES
+   global.set $assembly/index/TEXTURES
    global.get $~lib/memory/__stack_pointer
    global.get $~lib/memory/__stack_pointer
    i32.const 4
@@ -2628,7 +2628,7 @@
    i32.const 0
    i32.store
    local.get $1
-   i32.const 3
+   i32.const 12
    i32.const 4
    call $~lib/rt/itcms/__new
    local.tee $1
@@ -2642,6 +2642,33 @@
    local.get $1
    i32.const 0
    i32.store8 offset=2
+   local.get $1
+   i32.const 0
+   i32.store8 offset=3
+   local.get $1
+   i32.const 0
+   i32.store8 offset=4
+   local.get $1
+   i32.const 0
+   i32.store8 offset=5
+   local.get $1
+   i32.const 0
+   i32.store8 offset=6
+   local.get $1
+   i32.const 0
+   i32.store8 offset=7
+   local.get $1
+   i32.const 0
+   i32.store8 offset=8
+   local.get $1
+   i32.const 0
+   i32.store8 offset=9
+   local.get $1
+   i32.const 0
+   i32.store8 offset=10
+   local.get $1
+   i32.const 0
+   i32.store8 offset=11
    global.get $~lib/memory/__stack_pointer
    i32.const 4
    i32.add
@@ -2657,6 +2684,33 @@
    local.get $1
    i32.const 3
    i32.store8 offset=2
+   local.get $1
+   i32.const 20
+   i32.store8 offset=3
+   local.get $1
+   i32.const 36
+   i32.store8 offset=4
+   local.get $1
+   i32.const 52
+   i32.store8 offset=5
+   local.get $1
+   i32.const 68
+   i32.store8 offset=6
+   local.get $1
+   i32.const 84
+   i32.store8 offset=7
+   local.get $1
+   i32.const 100
+   i32.store8 offset=8
+   local.get $1
+   i32.const 116
+   i32.store8 offset=9
+   local.get $1
+   i32.const 132
+   i32.store8 offset=10
+   local.get $1
+   i32.const 148
+   i32.store8 offset=11
    local.get $1
    global.set $assembly/index/SPRITES
    f64.const 1.0471975511965976
@@ -2897,10 +2951,10 @@
   local.get $0
  )
  (func $~lib/typedarray/Uint8ClampedArray#__get (param $0 i32) (param $1 i32) (result i32)
+  local.get $1
   local.get $0
   i32.load offset=8
-  local.get $1
-  i32.le_u
+  i32.ge_u
   if
    i32.const 1248
    i32.const 1776
@@ -2909,9 +2963,9 @@
    call $~lib/builtins/abort
    unreachable
   end
-  local.get $1
   local.get $0
   i32.load offset=4
+  local.get $1
   i32.add
   i32.load8_u
  )
@@ -3067,22 +3121,22 @@
   (local $1 f64)
   (local $2 f64)
   (local $3 i32)
-  (local $4 i64)
-  (local $5 i32)
+  (local $4 i32)
+  (local $5 i64)
   (local $6 i32)
   (local $7 f64)
   (local $8 f64)
   (local $9 f64)
   local.get $0
   i64.reinterpret_f64
-  local.tee $4
+  local.tee $5
   i64.const 32
   i64.shr_u
   i32.wrap_i64
   local.tee $3
   i32.const 31
   i32.shr_u
-  local.set $5
+  local.set $6
   local.get $3
   i32.const 2147483647
   i32.and
@@ -3161,19 +3215,19 @@
    return
   end
   block $~lib/math/rempio2|inlined.1
-   local.get $4
+   local.get $5
    i64.const 32
    i64.shr_u
    i32.wrap_i64
    i32.const 2147483647
    i32.and
-   local.tee $6
+   local.tee $4
    i32.const 1073928572
    i32.lt_u
    if
     i32.const 1
     local.set $3
-    local.get $5
+    local.get $6
     if (result f64)
      local.get $0
      f64.const 1.5707963267341256
@@ -3181,7 +3235,7 @@
      local.set $0
      i32.const -1
      local.set $3
-     local.get $6
+     local.get $4
      i32.const 1073291771
      i32.ne
      if (result f64)
@@ -3212,7 +3266,7 @@
      f64.const 1.5707963267341256
      f64.sub
      local.set $0
-     local.get $6
+     local.get $4
      i32.const 1073291771
      i32.ne
      if (result f64)
@@ -3244,11 +3298,11 @@
     global.set $~lib/math/rempio2_y1
     br $~lib/math/rempio2|inlined.1
    end
-   local.get $6
+   local.get $4
    i32.const 1094263291
    i32.lt_u
    if
-    local.get $6
+    local.get $4
     i32.const 20
     i32.shr_u
     local.tee $3
@@ -3351,12 +3405,12 @@
     br $~lib/math/rempio2|inlined.1
    end
    i32.const 0
-   local.get $4
+   local.get $5
    call $~lib/math/pio2_large_quot
    local.tee $3
    i32.sub
    local.get $3
-   local.get $5
+   local.get $6
    select
    local.set $3
   end
@@ -4096,22 +4150,22 @@
   (local $1 f64)
   (local $2 f64)
   (local $3 i32)
-  (local $4 i64)
-  (local $5 i32)
+  (local $4 i32)
+  (local $5 i64)
   (local $6 i32)
   (local $7 f64)
   (local $8 f64)
   (local $9 f64)
   local.get $0
   i64.reinterpret_f64
-  local.tee $4
+  local.tee $5
   i64.const 32
   i64.shr_u
   i32.wrap_i64
   local.tee $3
   i32.const 31
   i32.shr_u
-  local.set $5
+  local.set $6
   local.get $3
   i32.const 2147483647
   i32.and
@@ -4172,19 +4226,19 @@
    return
   end
   block $~lib/math/rempio2|inlined.2
-   local.get $4
+   local.get $5
    i64.const 32
    i64.shr_u
    i32.wrap_i64
    i32.const 2147483647
    i32.and
-   local.tee $6
+   local.tee $4
    i32.const 1073928572
    i32.lt_u
    if
     i32.const 1
     local.set $3
-    local.get $5
+    local.get $6
     if (result f64)
      local.get $0
      f64.const 1.5707963267341256
@@ -4192,7 +4246,7 @@
      local.set $0
      i32.const -1
      local.set $3
-     local.get $6
+     local.get $4
      i32.const 1073291771
      i32.ne
      if (result f64)
@@ -4223,7 +4277,7 @@
      f64.const 1.5707963267341256
      f64.sub
      local.set $0
-     local.get $6
+     local.get $4
      i32.const 1073291771
      i32.ne
      if (result f64)
@@ -4255,11 +4309,11 @@
     global.set $~lib/math/rempio2_y1
     br $~lib/math/rempio2|inlined.2
    end
-   local.get $6
+   local.get $4
    i32.const 1094263291
    i32.lt_u
    if
-    local.get $6
+    local.get $4
     i32.const 20
     i32.shr_u
     local.tee $3
@@ -4362,12 +4416,12 @@
     br $~lib/math/rempio2|inlined.2
    end
    i32.const 0
-   local.get $4
+   local.get $5
    call $~lib/math/pio2_large_quot
    local.tee $3
    i32.sub
    local.get $3
-   local.get $5
+   local.get $6
    select
    local.set $3
   end
@@ -4486,10 +4540,10 @@
   select
  )
  (func $~lib/typedarray/Uint8ClampedArray#__set (param $0 i32) (param $1 i32) (param $2 i32)
+  local.get $1
   local.get $0
   i32.load offset=8
-  local.get $1
-  i32.le_u
+  i32.ge_u
   if
    i32.const 1248
    i32.const 1776
@@ -4498,16 +4552,16 @@
    call $~lib/builtins/abort
    unreachable
   end
-  local.get $1
   local.get $0
   i32.load offset=4
+  local.get $1
   i32.add
-  local.get $2
   i32.const 255
   local.get $2
   i32.sub
   i32.const 31
   i32.shr_s
+  local.get $2
   i32.or
   local.get $2
   i32.const 31
@@ -4536,23 +4590,23 @@
   i32.const 668265263
   i32.mul
   local.tee $0
+  local.get $0
   i32.const 15
   i32.shr_u
-  local.get $0
   i32.xor
   i32.const -2048144777
   i32.mul
   local.tee $0
+  local.get $0
   i32.const 13
   i32.shr_u
-  local.get $0
   i32.xor
   i32.const -1028477379
   i32.mul
   local.tee $0
+  local.get $0
   i32.const 16
   i32.shr_u
-  local.get $0
   i32.xor
   i32.and
   i32.const 2
@@ -4824,12 +4878,12 @@
   f64.copysign
  )
  (func $~lib/typedarray/Float64Array#__get (param $0 i32) (param $1 i32) (result f64)
+  local.get $1
   local.get $0
   i32.load offset=8
   i32.const 3
   i32.shr_u
-  local.get $1
-  i32.le_u
+  i32.ge_u
   if
    i32.const 1248
    i32.const 1776
@@ -4884,11 +4938,11 @@
    local.get $2
    i32.store offset=8
    local.get $2
+   local.get $1
    local.get $2
    i32.load offset=4
    i32.const 3
    i32.and
-   local.get $1
    i32.or
    i32.store offset=4
    local.get $3
@@ -4936,19 +4990,19 @@
    i32.load offset=8
    local.set $2
    local.get $1
-   global.get $~lib/rt/itcms/white
    local.get $0
+   global.get $~lib/rt/itcms/white
    i32.or
    i32.store offset=4
    local.get $1
    local.get $2
    i32.store offset=8
    local.get $2
+   local.get $1
    local.get $2
    i32.load offset=4
    i32.const 3
    i32.and
-   local.get $1
    i32.or
    i32.store offset=4
    local.get $0
@@ -5132,10 +5186,10 @@
    local.tee $3
    f64.const 0
    f64.lt
+   local.get $3
    global.get $assembly/index/mapSizeX
    f64.convert_i32_s
-   local.get $3
-   f64.le
+   f64.ge
    i32.or
    local.get $0
    f64.load offset=16
@@ -5146,10 +5200,10 @@
    f64.const 0
    f64.lt
    i32.or
+   local.get $7
    global.get $assembly/index/mapSizeY
    f64.convert_i32_s
-   local.get $7
-   f64.le
+   f64.ge
    i32.or
    if
     i32.const 1
@@ -5168,7 +5222,7 @@
     f64.add
     i32.trunc_f64_s
     call $~lib/typedarray/Uint8ClampedArray#__get
-    global.get $assembly/index/TILE_TYPES
+    global.get $assembly/index/TEXTURES
     i32.load8_u offset=3
     i32.eq
     if (result i32)
@@ -5218,10 +5272,10 @@
      local.tee $3
      f64.const 0
      f64.lt
+     local.get $3
      global.get $assembly/index/mapSizeX
      f64.convert_i32_s
-     local.get $3
-     f64.le
+     f64.ge
      i32.or
      local.get $0
      f64.load offset=16
@@ -5232,10 +5286,10 @@
      f64.const 0
      f64.lt
      i32.or
+     local.get $7
      global.get $assembly/index/mapSizeY
      f64.convert_i32_s
-     local.get $7
-     f64.le
+     f64.ge
      i32.or
      if
       i32.const 1
@@ -5255,7 +5309,7 @@
       f64.add
       i32.trunc_f64_s
       call $~lib/typedarray/Uint8ClampedArray#__get
-      global.get $assembly/index/TILE_TYPES
+      global.get $assembly/index/TEXTURES
       i32.load8_u offset=3
       i32.eq
       if
@@ -5484,12 +5538,12 @@
   f64.mul
   local.set $3
   loop $for-loop|0
-   global.get $assembly/index/screenHeight
    local.get $7
-   i32.gt_u
+   global.get $assembly/index/screenHeight
+   i32.lt_u
    if
-    global.get $assembly/index/screenWidth
     local.get $7
+    global.get $assembly/index/screenWidth
     i32.mul
     f64.convert_i32_u
     local.get $0
@@ -5498,10 +5552,10 @@
     i64.const 2
     i64.shl
     local.set $8
-    local.get $10
     local.get $7
     f64.convert_i32_u
-    f64.gt
+    local.get $10
+    f64.lt
     if
      global.get $~lib/memory/__stack_pointer
      global.get $assembly/index/imageBuffer
@@ -5550,10 +5604,10 @@
      i32.const 255
      call $~lib/typedarray/Uint8ClampedArray#__set
     else
-     local.get $9
      local.get $7
      i64.extend_i32_u
-     i64.gt_u
+     local.get $9
+     i64.lt_u
      if
       local.get $7
       f64.convert_i32_u
@@ -5574,9 +5628,9 @@
          local.tee $13
          i32.store
          local.get $13
+         local.get $8
          local.get $5
          i64.extend_i32_s
-         local.get $8
          i64.add
          i32.wrap_i64
          i32.const 200
@@ -5601,7 +5655,7 @@
        i32.store
        local.get $5
        local.get $13
-       global.get $assembly/index/TILE_TYPES
+       global.get $assembly/index/TEXTURES
        i32.load8_u offset=3
        call $~lib/map/Map<u8,~lib/typedarray/Uint8ClampedArray>#get
        local.tee $5
@@ -5728,15 +5782,15 @@
        f64.const 0
        f64.lt
        i32.or
+       local.get $18
        global.get $assembly/index/mapSizeX
        f64.convert_i32_s
-       local.get $18
-       f64.le
+       f64.ge
        i32.or
+       local.get $12
        global.get $assembly/index/mapSizeY
        f64.convert_i32_s
-       local.get $12
-       f64.le
+       f64.ge
        i32.or
        br_if $for-continue|0
        global.get $~lib/memory/__stack_pointer
@@ -5838,10 +5892,9 @@
   global.set $~lib/memory/__stack_pointer
   global.get $assembly/index/theta
  )
- (func $assembly/index/drawSprite (param $0 f64) (param $1 f64) (param $2 i32)
-  (local $3 i64)
-  (local $4 i32)
-  (local $5 f64)
+ (func $assembly/index/drawSprite (param $0 f64) (param $1 f64) (param $2 f64) (param $3 i32)
+  (local $4 i64)
+  (local $5 i32)
   (local $6 i64)
   (local $7 i64)
   (local $8 i64)
@@ -5849,14 +5902,15 @@
   (local $10 i32)
   (local $11 i64)
   (local $12 f64)
-  (local $13 i32)
-  (local $14 f64)
-  (local $15 i32)
+  (local $13 f64)
+  (local $14 i32)
+  (local $15 f64)
   (local $16 i32)
   (local $17 i32)
-  (local $18 f64)
+  (local $18 i32)
   (local $19 f64)
   (local $20 f64)
+  (local $21 f64)
   global.get $~lib/memory/__stack_pointer
   i32.const 8
   i32.sub
@@ -5873,114 +5927,107 @@
    unreachable
   end
   global.get $~lib/memory/__stack_pointer
-  local.tee $4
+  local.tee $5
   i64.const 0
   i64.store
-  local.get $4
+  local.get $5
   global.get $assembly/index/sprites
-  local.tee $13
+  local.tee $14
   i32.store
-  local.get $4
-  local.get $13
-  local.get $2
+  local.get $5
+  local.get $14
+  local.get $3
   call $~lib/map/Map<u8,~lib/typedarray/Uint8ClampedArray>#get
-  local.tee $13
+  local.tee $14
   i32.store offset=4
   global.get $assembly/index/camera
-  local.tee $4
-  f64.load
   local.tee $5
-  local.get $0
-  f64.const 64
-  f64.mul
+  f64.load
   local.tee $12
-  f64.sub
-  f64.abs
-  local.tee $0
   local.get $0
-  f64.mul
-  local.get $4
-  f64.load offset=8
-  local.tee $0
-  local.get $1
-  f64.const 64
-  f64.mul
-  local.tee $1
   f64.sub
   f64.abs
-  local.tee $14
-  local.get $14
+  local.tee $13
+  local.get $13
+  f64.mul
+  local.get $5
+  f64.load offset=8
+  local.tee $13
+  local.get $1
+  f64.sub
+  f64.abs
+  local.tee $15
+  local.get $15
   f64.mul
   f64.add
   f64.sqrt
   f64.const 32
   f64.sub
-  local.set $14
+  local.set $15
   block $__inlined_func$~lib/math/NativeMath.atan2
    local.get $1
-   local.get $0
+   local.get $13
    f64.sub
    f64.neg
-   local.tee $0
-   local.get $0
-   f64.ne
-   local.get $12
-   local.get $5
-   f64.sub
    local.tee $1
    local.get $1
    f64.ne
+   local.get $0
+   local.get $12
+   f64.sub
+   local.tee $0
+   local.get $0
+   f64.ne
    i32.or
    if
-    local.get $1
     local.get $0
+    local.get $1
     f64.add
     local.set $0
     br $__inlined_func$~lib/math/NativeMath.atan2
    end
-   local.get $0
+   local.get $1
    i64.reinterpret_f64
-   local.tee $3
+   local.tee $4
    i64.const 32
    i64.shr_u
    i32.wrap_i64
-   local.set $4
-   local.get $1
+   local.set $5
+   local.get $0
    i64.reinterpret_f64
    local.tee $6
    i64.const 32
    i64.shr_u
    i32.wrap_i64
-   local.set $15
-   local.get $6
-   i32.wrap_i64
    local.tee $16
-   local.get $15
    i32.const 1072693248
    i32.sub
+   local.get $6
+   i32.wrap_i64
+   local.tee $17
    i32.or
    i32.eqz
    if
-    local.get $0
+    local.get $1
     call $~lib/math/NativeMath.atan
     local.set $0
     br $__inlined_func$~lib/math/NativeMath.atan2
    end
-   local.get $15
+   local.get $16
    i32.const 30
    i32.shr_u
    i32.const 2
    i32.and
-   local.get $4
+   local.get $5
    i32.const 31
    i32.shr_u
    i32.or
-   local.set $17
-   local.get $4
+   local.set $18
+   local.get $5
    i32.const 2147483647
    i32.and
-   local.tee $4
-   local.get $3
+   local.tee $5
+   local.get $4
    i32.wrap_i64
    i32.or
    i32.eqz
@@ -5988,8 +6035,13 @@
     block $break|0
      block $case3|0
       block $case2|0
-       local.get $17
-       br_table $__inlined_func$~lib/math/NativeMath.atan2 $__inlined_func$~lib/math/NativeMath.atan2 $case2|0 $case3|0 $break|0
+       block $case0|0
+        local.get $18
+        br_table $case0|0 $case0|0 $case2|0 $case3|0 $break|0
+       end
+       local.get $1
+       local.set $0
+       br $__inlined_func$~lib/math/NativeMath.atan2
       end
       f64.const 3.141592653589793
       local.set $0
@@ -6001,46 +6053,46 @@
     end
    end
    block $folding-inner0
-    local.get $15
+    local.get $16
     i32.const 2147483647
     i32.and
-    local.tee $15
-    local.get $16
+    local.tee $16
+    local.get $17
     i32.or
     i32.eqz
     br_if $folding-inner0
-    local.get $15
+    local.get $16
     i32.const 2146435072
     i32.eq
     if
-     local.get $4
+     local.get $5
      i32.const 2146435072
      i32.eq
      if (result f64)
       f64.const 2.356194490192345
       f64.const 0.7853981633974483
-      local.get $17
+      local.get $18
       i32.const 2
       i32.and
       select
       local.tee $0
       f64.neg
       local.get $0
-      local.get $17
+      local.get $18
       i32.const 1
       i32.and
       select
      else
       f64.const 3.141592653589793
       f64.const 0
-      local.get $17
+      local.get $18
       i32.const 2
       i32.and
       select
       local.tee $0
       f64.neg
       local.get $0
-      local.get $17
+      local.get $18
       i32.const 1
       i32.and
       select
@@ -6048,31 +6100,31 @@
      local.set $0
      br $__inlined_func$~lib/math/NativeMath.atan2
     end
-    local.get $4
+    local.get $5
     i32.const 2146435072
     i32.eq
-    local.get $4
-    local.get $15
+    local.get $16
     i32.const 67108864
     i32.add
-    i32.gt_u
+    local.get $5
+    i32.lt_u
     i32.or
     br_if $folding-inner0
-    local.get $15
-    local.get $4
+    local.get $5
     i32.const 67108864
     i32.add
-    i32.gt_u
+    local.get $16
+    i32.lt_u
     i32.const 0
-    local.get $17
+    local.get $18
     i32.const 2
     i32.and
     select
     if (result f64)
      f64.const 0
     else
-     local.get $0
      local.get $1
+     local.get $0
      f64.div
      f64.abs
      call $~lib/math/NativeMath.atan
@@ -6082,7 +6134,7 @@
      block $case3|1
       block $case2|1
        block $case1|1
-        local.get $17
+        local.get $18
         br_table $__inlined_func$~lib/math/NativeMath.atan2 $case1|1 $case2|1 $case3|1 $break|1
        end
        local.get $0
@@ -6110,7 +6162,7 @@
    end
    f64.const -1.5707963267948966
    f64.const 1.5707963267948966
-   local.get $17
+   local.get $18
    i32.const 1
    i32.and
    select
@@ -6174,9 +6226,9 @@
   end
   local.get $0
   global.get $assembly/index/screenWidth
-  local.tee $4
-  f64.convert_i32_u
   local.tee $5
+  f64.convert_i32_u
+  local.tee $19
   f64.mul
   f64.const 1.0471975511965976
   f64.div
@@ -6186,49 +6238,49 @@
   local.get $12
   f64.const 1
   f64.sub
-  local.get $0
   local.get $12
   f64.const 0.5
   f64.sub
-  f64.ge
+  local.get $0
+  f64.le
   select
   i64.trunc_f64_s
-  local.set $3
+  local.set $4
   f64.const 1
   f64.const 1
-  local.get $14
+  local.get $15
   f64.sub
   f64.div
   global.get $assembly/index/camera
   f64.load offset=24
-  local.get $14
+  local.get $15
   f64.div
   global.get $assembly/index/distToPlane
   local.tee $0
   f64.mul
   f64.add
-  local.tee $18
+  local.tee $20
   f64.ceil
-  local.set $19
+  local.set $12
   local.get $0
   f64.const 64
   f64.mul
-  local.get $14
+  local.get $15
   f64.div
-  local.tee $12
+  local.tee $13
   f64.const 0.5
   f64.mul
-  local.tee $20
+  local.tee $21
   f64.ceil
   local.tee $0
   local.get $0
   f64.const 1
   f64.sub
-  local.get $20
   local.get $0
   f64.const 0.5
   f64.sub
-  f64.ge
+  local.get $21
+  f64.le
   select
   i64.trunc_f64_s
   local.set $8
@@ -6236,30 +6288,30 @@
   local.set $0
   global.get $assembly/index/halfHeight
   f64.convert_i32_u
-  local.get $19
-  local.get $19
+  local.get $12
+  local.get $12
   f64.const 1
   f64.sub
-  local.get $18
-  local.get $19
+  local.get $12
   f64.const 0.5
   f64.sub
-  f64.ge
+  local.get $20
+  f64.le
   select
   f64.add
   i64.trunc_f64_s
   f64.convert_i64_s
-  local.get $4
+  local.get $5
   i32.const 1
   i32.shr_u
   f64.convert_i32_u
-  local.get $3
+  local.get $4
   f64.convert_i64_s
   f64.sub
   f64.abs
   f64.const 3.141592653589793
   f64.mul
-  local.get $5
+  local.get $19
   f64.div
   call $~lib/math/NativeMath.cos
   f64.const -2
@@ -6267,7 +6319,7 @@
   global.get $assembly/index/screenWidth
   f64.convert_i32_u
   f64.mul
-  local.get $14
+  local.get $15
   f64.div
   f64.const 4
   f64.add
@@ -6275,14 +6327,14 @@
   f64.floor
   i64.trunc_f64_s
   local.set $9
-  local.get $8
+  local.get $4
   global.get $assembly/index/screenWidth
   i64.extend_i32_u
+  local.get $8
   i64.add
-  local.get $3
-  i64.lt_s
+  i64.gt_s
   if
-   local.get $3
+   local.get $4
    global.get $assembly/index/screenWidth
    i32.const 1
    i32.shl
@@ -6294,42 +6346,68 @@
    f64.floor
    i64.trunc_f64_s
    i64.sub
-   local.set $3
+   local.set $4
   end
   f64.const 64
-  local.get $12
+  local.get $13
   f64.div
-  local.set $18
+  local.set $12
   local.get $8
   f64.convert_i64_s
-  f64.const -0
   local.get $1
-  call $~lib/math/NativeMath.sin
-  f64.sub
-  local.tee $19
-  f64.mul
+  local.get $2
+  f64.add
   local.set $1
-  loop $for-loop|3
-   local.get $12
-   local.get $10
-   f64.convert_i32_u
+  loop $while-continue|07
+   local.get $1
+   f64.const 0
+   f64.lt
+   if
+    local.get $1
+    f64.const 6.283185307179586
+    f64.add
+    local.set $1
+    br $while-continue|07
+   end
+  end
+  loop $while-continue|19
+   local.get $1
+   f64.const 6.283185307179586
    f64.gt
    if
-    local.get $3
-    f64.convert_i64_s
     local.get $1
+    f64.const 6.283185307179586
+    f64.sub
+    local.set $1
+    br $while-continue|19
+   end
+  end
+  local.get $1
+  call $~lib/math/NativeMath.sin
+  local.tee $19
+  f64.mul
+  local.set $2
+  loop $for-loop|3
+   local.get $10
+   f64.convert_i32_u
+   local.get $13
+   f64.lt
+   if
+    local.get $4
+    f64.convert_i64_s
+    local.get $2
     f64.sub
     f64.floor
     i64.trunc_f64_s
     local.set $7
-    local.get $1
+    local.get $2
     local.get $19
     f64.sub
-    local.set $1
+    local.set $2
+    local.get $7
     global.get $assembly/index/screenWidth
     i64.extend_i32_u
-    local.get $7
-    i64.gt_s
+    i64.lt_s
     local.get $7
     i64.const 0
     i64.ge_s
@@ -6337,9 +6415,9 @@
     if
      global.get $~lib/memory/__stack_pointer
      global.get $assembly/index/wallDistances
-     local.tee $4
+     local.tee $5
      i32.store
-     local.get $4
+     local.get $5
      local.get $7
      i32.wrap_i64
      call $~lib/typedarray/Float64Array#__get
@@ -6355,56 +6433,110 @@
      else
       global.get $~lib/memory/__stack_pointer
       global.get $assembly/index/wallDistances
-      local.tee $4
+      local.tee $5
       i32.store
-      local.get $4
+      local.get $5
       local.get $7
       i32.wrap_i64
       call $~lib/typedarray/Float64Array#__get
-      local.get $14
+      local.get $15
       f64.gt
      end
      if
-      f64.const -8
-      f64.const 0
-      global.get $assembly/index/SPRITES
-      i32.load8_u
-      local.get $2
-      i32.const 255
-      i32.and
-      i32.eq
-      select
-      local.set $5
+      block $__inlined_func$assembly/index/spriteOffset (result f64)
+       block $break|00
+        block $case0|01
+         local.get $3
+         i32.const 255
+         i32.and
+         local.tee $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=3
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=4
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=5
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=6
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=7
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=8
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=9
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=10
+         i32.eq
+         br_if $case0|01
+         local.get $5
+         global.get $assembly/index/SPRITES
+         i32.load8_u offset=11
+         i32.eq
+         br_if $case0|01
+         br $break|00
+        end
+        f64.const -8
+        br $__inlined_func$assembly/index/spriteOffset
+       end
+       f64.const 0
+      end
+      local.set $1
       local.get $9
       local.get $8
       i64.sub
       local.set $6
       loop $for-loop|4
+       local.get $6
        local.get $8
        local.get $9
        i64.add
-       local.get $6
-       i64.gt_s
+       i64.lt_s
        if
+        local.get $6
         global.get $assembly/index/screenHeight
         i64.extend_i32_u
-        local.get $6
-        i64.gt_s
+        i64.lt_s
         local.get $6
         i64.const 0
         i64.ge_s
         i32.and
         if
-         local.get $7
+         local.get $6
          global.get $assembly/index/screenWidth
          i64.extend_i32_u
-         local.get $6
          i64.mul
+         local.get $7
          i64.add
          i64.const 2
          i64.shl
          local.set $11
-         local.get $5
+         local.get $1
          f64.floor
          f64.const 64
          f64.mul
@@ -6414,64 +6546,64 @@
          i32.trunc_f64_s
          i32.const 2
          i32.shl
-         local.tee $15
+         local.tee $16
          i32.const 0
          i32.ge_s
          if (result i32)
-          local.get $13
+          local.get $16
+          local.get $14
           i32.load offset=8
-          local.get $15
-          i32.gt_s
+          i32.lt_s
          else
           i32.const 0
          end
          if
           i32.const 3
-          local.set $4
+          local.set $5
           loop $for-loop|5
-           local.get $4
+           local.get $5
            i32.const 0
            i32.ge_s
            if
             i32.const 0
-            local.get $4
+            local.get $5
             i32.const 3
             i32.eq
-            local.get $13
-            local.get $4
-            local.get $15
+            local.get $14
+            local.get $5
+            local.get $16
             i32.add
             call $~lib/typedarray/Uint8ClampedArray#__get
-            local.tee $16
+            local.tee $17
             select
             i32.eqz
             if
              global.get $~lib/memory/__stack_pointer
              global.get $assembly/index/imageBuffer
-             local.tee $17
+             local.tee $18
              i32.store
-             local.get $17
-             local.get $4
-             i64.extend_i32_s
+             local.get $18
              local.get $11
+             local.get $5
+             i64.extend_i32_s
              i64.add
              i32.wrap_i64
-             local.get $16
+             local.get $17
              call $~lib/typedarray/Uint8ClampedArray#__set
-             local.get $4
+             local.get $5
              i32.const 1
              i32.sub
-             local.set $4
+             local.set $5
              br $for-loop|5
             end
            end
           end
          end
         end
-        local.get $5
-        local.get $18
+        local.get $1
+        local.get $12
         f64.add
-        local.set $5
+        local.set $1
         local.get $6
         i64.const 1
         i64.add
@@ -6482,7 +6614,7 @@
      end
     end
     local.get $0
-    local.get $18
+    local.get $12
     f64.add
     local.set $0
     local.get $10
@@ -6646,23 +6778,23 @@
    i32.const 668265263
    i32.mul
    local.tee $1
+   local.get $1
    i32.const 15
    i32.shr_u
-   local.get $1
    i32.xor
    i32.const -2048144777
    i32.mul
    local.tee $1
+   local.get $1
    i32.const 13
    i32.shr_u
-   local.get $1
    i32.xor
    i32.const -1028477379
    i32.mul
    local.tee $1
+   local.get $1
    i32.const 16
    i32.shr_u
-   local.get $1
    i32.xor
    local.tee $8
    local.get $0
@@ -6809,6 +6941,8 @@
         i32.load offset=4
         i32.store offset=4
         local.get $1
+        local.get $6
+        local.get $7
         local.get $11
         i32.const -1028477379
         i32.mul
@@ -6819,29 +6953,27 @@
         i32.const 668265263
         i32.mul
         local.tee $11
+        local.get $11
         i32.const 15
         i32.shr_u
-        local.get $11
         i32.xor
         i32.const -2048144777
         i32.mul
         local.tee $11
+        local.get $11
         i32.const 13
         i32.shr_u
-        local.get $11
         i32.xor
         i32.const -1028477379
         i32.mul
         local.tee $11
+        local.get $11
         i32.const 16
         i32.shr_u
-        local.get $11
         i32.xor
-        local.get $7
         i32.and
         i32.const 2
         i32.shl
-        local.get $6
         i32.add
         local.tee $11
         i32.load
@@ -6908,10 +7040,10 @@
     i32.const 1
     i32.add
     i32.store offset=16
+    local.get $1
     local.get $4
     i32.const 12
     i32.mul
-    local.get $1
     i32.add
     local.tee $1
     local.get $3
@@ -6935,9 +7067,9 @@
     local.get $1
     local.get $0
     i32.load
+    local.get $8
     local.get $0
     i32.load offset=4
-    local.get $8
     i32.and
     i32.const 2
     i32.shl

@@ -2,13 +2,14 @@ import { Camera } from './camera.js';
 import { Input } from './input.js';
 import { Minimap } from './minimap.js';
 import { RayCaster } from './ray-caster.js';
-import { BLOCK_SIZE, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TEXTURES, TURN_SPEED, INITIAL_CAMERA, TEXTURE_FRAMES, SPRITE_FRAMES } from './constants.js';
+import { BLOCK_SIZE, LARGE_MAP, FOV, MOVE_SPEED, SLIVER_SIZE, TEXTURES, TURN_SPEED, INITIAL_CAMERA, TEXTURE_FRAMES, SPRITE_FRAMES, SPRITE_LOCATIONS, FULL_SHEET_SPRITES, SPRITES } from './constants.js';
 
 /**
  * Main entry point to the render engine. Responsible for initial setup and scheduling frame updates
  */
 export class Renderer {
   animationCounter = 0;
+  blockAndHalf = BLOCK_SIZE * 1.5;
   mapChanged = true;
   prevTimestamp = 0;
   wasmModule = null;
@@ -36,12 +37,19 @@ export class Renderer {
     /** @type {number[][]} */this.mapData = mapData;
     /** @type {Camera} */this.camera = new Camera(INITIAL_CAMERA);
     /** @type {Minimap} */this.minimap = new Minimap(this.camera, minimapCanvas, miniMapSizeX, miniMapSizeY, mapData);
+    this.pxSizeX = this.mapSizeX * BLOCK_SIZE;
+    this.pxSizeY = this.mapSizeY * BLOCK_SIZE;
   }
 
   start() {
     this.minimap.init();
     this.minimap.listenForChanges(() => this.mapChanged = true);
     Input.init(this.camera);
+    // convert sprite map coords to px
+    SPRITE_LOCATIONS.forEach(def => {
+      def.x *= BLOCK_SIZE;
+      def.y *= BLOCK_SIZE;
+    });
     this.rayCaster = new RayCaster(this.camera, this.distToPlane, this.mapData, this.mainCanvas, this.numSlivers, this.deltaT, this.minimap, this.mapSizeX, this.mapSizeY);
     this.rayCaster.init().then(() => {
       requestAnimationFrame(this.update.bind(this))});
@@ -126,13 +134,37 @@ export class Renderer {
     }
     this.minimap.drawMiniMap(this.mapData, this.camera);
 
-    for (let key of Object.keys(TEXTURE_FRAMES)) {
+    for (const key of Object.keys(TEXTURE_FRAMES)) {
       const frameIndex = Math.floor(this.animationCounter * 4) % this.rayCaster.animatedTextures.get(Number(key)).length;
       this.rayCaster.wasmCalculations.setTexture(key, this.rayCaster.animatedTextures.get(Number(key))[frameIndex]);
     }
-    for (let [key, value] of Object.entries(SPRITE_FRAMES)) {
+    for (const [key, value] of Object.entries(SPRITE_FRAMES)) {
       const frameIndex = Math.floor(this.animationCounter * value.speed) % this.rayCaster.animatedSprites.get(Number(key)).length;
       this.rayCaster.wasmCalculations.setSprite(key, this.rayCaster.animatedSprites.get(Number(key))[frameIndex]);
+    }
+    for (const location of SPRITE_LOCATIONS) {
+      if (location.moveX) {
+        if (location.x > this.pxSizeX - this.blockAndHalf || location.x < this.blockAndHalf) {
+          location.moveX *= -1;
+          location.t = this.rayCaster.wasmCalculations.normalizeAngle((location.t || 0) + Math.PI);
+        }
+        location.x += (secondsElapsed * location.moveX) || 0;
+      }
+      if (location.id in FULL_SHEET_SPRITES) {
+        const x = location.x - this.camera.x;
+        const y = location.y - this.camera.y;
+        let baseAngle = Math.atan2(-y, x) - Math.PI / 8;
+        if (location.moveX < 0) {
+          baseAngle += Math.PI;
+        }
+        const relativeAngle = this.rayCaster.wasmCalculations.normalizeAngle(baseAngle);
+        const viewAngle = Math.floor(relativeAngle / (Math.PI / 4));
+        location.t = Math.PI / 2 - relativeAngle;
+        if (location.moveX < 0) {
+          location.t += Math.PI;
+        }
+        location.id = SPRITES[FULL_SHEET_SPRITES[location.id] + viewAngle.toString()];
+      }
     }
     this.rayCaster.cast();
     this.prevTimestamp = timestamp;

@@ -17,7 +17,7 @@ export class Input {
           this.jumpTime = JUMP_TIME;
         }
         if (e.shiftKey) {
-          ['w', 'a', 's', 'd'].forEach(key => Input.downKeys.delete(key));
+          ['w', 'a', 's', 'd', 'q', 'e'].forEach(key => Input.downKeys.delete(key));
         }
         Input.downKeys.add(e.key);
       } else if (e.type === 'keyup') {
@@ -26,10 +26,10 @@ export class Input {
         }
         Input.downKeys.delete(e.key);
       }
-      this.turningLeft = Input.downKeys.has('a') || (e.shiftKey && Input.downKeys.has('Q'));
-      this.turningRight = Input.downKeys.has('d') || (e.shiftKey && Input.downKeys.has('E'));
-      this.strafeLeft = e.shiftKey && Input.downKeys.has('A');
-      this.strafeRight = e.shiftKey && Input.downKeys.has('D');
+      this.turningLeft = Input.downKeys.has('q') || (e.shiftKey && Input.downKeys.has('A'));
+      this.turningRight = Input.downKeys.has('e') || (e.shiftKey && Input.downKeys.has('D'));
+      this.strafeLeft = Input.downKeys.has('a');
+      this.strafeRight = Input.downKeys.has('d');
       this.movingFwd = Input.downKeys.has('w') || Input.downKeys.has('W');
       this.movingBack = Input.downKeys.has('s') || Input.downKeys.has('S');
     }
